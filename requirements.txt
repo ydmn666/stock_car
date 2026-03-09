@@ -1,0 +1,11 @@
+Streamlit
+AkShare
+sqlite
+Pandas
+Plotly
+Matplotlib
+Prophet
+reportlab
+bcrypt
+numpy
+openai
