@@ -44,3 +44,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     temperature: float = 1.1
+
+
+class AgentRequest(BaseModel):
+    messages: list[ChatMessage]

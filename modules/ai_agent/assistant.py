@@ -3,11 +3,26 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from frontend.services.api_client import get_deepseek_chat_stream as api_get_deepseek_chat_stream
+from frontend.services.api_client import (
+    get_agent_chat_stream as api_get_agent_chat_stream,
+    get_deepseek_chat_stream as api_get_deepseek_chat_stream,
+)
 
 
 def get_deepseek_chat_stream(messages, temperature=1.1):
     yield from api_get_deepseek_chat_stream(messages, temperature)
+
+
+def get_agent_chat_stream(messages):
+    yield from api_get_agent_chat_stream(messages)
+
+
+def _get_agent_status_text(prompt: str) -> str:
+    if any(keyword in prompt for keyword in ("新闻", "资讯", "公告", "舆情", "消息")):
+        return "正在查询相关新闻并生成分析..."
+    if any(keyword in prompt for keyword in ("预测", "趋势", "后市", "未来", "看涨", "看跌")):
+        return "正在生成趋势判断并整理分析..."
+    return "正在检索数据并生成分析..."
 
 
 def render_ai_assistant_sidebar():
@@ -24,19 +39,24 @@ def render_ai_assistant_sidebar():
             role = "user" if msg["role"] == "user" else "assistant"
             st.chat_message(role).write(msg["content"])
 
-        if prompt := st.chat_input("问代码 / 问概念...", key="sidebar_input"):
+        if prompt := st.chat_input("问股票 / 问代码 / 问概念...", key="sidebar_input"):
             st.session_state.sidebar_chat.append({"role": "user", "content": prompt})
             st.chat_message("user").write(prompt)
 
             with st.chat_message("assistant"):
                 system_prompt = (
-                    "你是新能源行业的侧边栏助手。"
-                    "优先回答 A 股股票代码，其次做一句话科普。"
-                    "回答尽量简洁，除非用户明确要求展开。"
+                    "你是新能源车股票系统里的智能助手。"
+                    "优先回答 A 股股票代码、个股基础分析、新闻摘要和趋势判断。"
+                    "如果缺少股票代码且无法可靠判断，请明确提醒用户补充。"
+                    "回答尽量简洁。"
                 )
                 context_messages = st.session_state.sidebar_chat[-10:]
                 messages = [{"role": "system", "content": system_prompt}, *context_messages]
-                response = st.write_stream(get_deepseek_chat_stream(messages, temperature=0.6))
+
+                status_placeholder = st.empty()
+                status_placeholder.info(_get_agent_status_text(prompt))
+                response = st.write_stream(get_agent_chat_stream(messages))
+                status_placeholder.empty()
 
             st.session_state.sidebar_chat.append({"role": "assistant", "content": response})
 
@@ -77,9 +97,7 @@ def build_technical_prompt(ticker_name, df, all_data=None):
     competitors_str = "\n".join(competitor_info) if competitor_info else "无其他对比数据"
 
     return f"""
-你是一位资深金融分析师，尤其擅长中国新能源车产业链研究。
-请根据用户给出的客观交易数据，结合行业背景知识，输出一份专业、克制的分析报告。
-
+你是一位资深金融分析师，尤其擅长中国新能源车产业链研究。请根据用户给出的客观交易数据，结合行业背景知识，输出一份专业、克制的分析报告。
 分析对象: {ticker_name}
 
 技术面客观数据:
@@ -118,7 +136,6 @@ def build_forecast_prompt(ticker_name, forecast_df):
 
     return f"""
 你是一位量化策略顾问。下面是一份由 Prophet 生成的 7 天股价预测结果。
-
 分析对象: {ticker_name}
 - 模型方向: {direction}
 - 理论涨跌幅: {expected_growth:.2f}%
@@ -161,7 +178,6 @@ def build_sentiment_prompt(stock_name, news_df, price_trend_str, metrics=None, i
 
     return f"""
 你是一位交易员。请基于最新市场信息，对 {stock_name} 做舆情与情绪分析。
-
 资讯来源: {source_type}
 
 量化指标:
