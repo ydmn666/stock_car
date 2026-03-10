@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.schemas import (
+    AgentRequest,
     ChatRequest,
     ForecastRequest,
     LogHistoryRequest,
@@ -14,6 +15,7 @@ from backend.schemas import (
     StockDataRequest,
     StockNewsRequest,
 )
+from backend.agents.stock_agent import stream_agent
 from backend.serialization import dataframe_to_records, records_to_dataframe
 from backend.services.ai_service import stream_chat
 from backend.services.auth_service import (
@@ -117,6 +119,17 @@ def ai_chat_stream(payload: ChatRequest):
     try:
         return StreamingResponse(
             stream_chat([message.model_dump() for message in payload.messages], payload.temperature),
+            media_type="text/plain; charset=utf-8",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/ai/agent/stream")
+def ai_agent_stream(payload: AgentRequest):
+    try:
+        return StreamingResponse(
+            stream_agent([message.model_dump() for message in payload.messages]),
             media_type="text/plain; charset=utf-8",
         )
     except Exception as exc:

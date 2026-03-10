@@ -145,3 +145,19 @@ def get_deepseek_chat_stream(messages: list[dict], temperature: float = 1.1):
                     yield chunk
     except Exception as exc:
         yield f"⚠️ **AI 连接失败**: {exc}\n\n请检查后端服务、API Key 和网络。"
+
+
+def get_agent_chat_stream(messages: list[dict]):
+    try:
+        with requests.post(
+            f"{_base_url()}/ai/agent/stream",
+            json={"messages": messages},
+            timeout=(10, 300),
+            stream=True,
+        ) as response:
+            response.raise_for_status()
+            for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
+                if chunk:
+                    yield chunk
+    except Exception as exc:
+        yield f"⚠️ **Agent 连接失败**: {exc}\n\n请检查后端服务、API Key 和网络。"
