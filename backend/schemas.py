@@ -48,3 +48,11 @@ class ChatRequest(BaseModel):
 
 class AgentRequest(BaseModel):
     messages: list[ChatMessage]
+    context: dict = Field(default_factory=dict)
+
+
+class ReportRequest(BaseModel):
+    symbol: str
+    stock_name: str | None = None
+    start_date: str
+    end_date: str

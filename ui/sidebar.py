@@ -2,7 +2,6 @@ import streamlit as st
 from datetime import datetime, timedelta
 
 from frontend.services.api_client import get_stock_name
-from modules.ai_agent.assistant import render_ai_assistant_sidebar
 
 
 NEV_HOT_STOCKS = {
@@ -19,8 +18,6 @@ NEV_HOT_STOCKS = {
 
 
 def show_sidebar():
-    render_ai_assistant_sidebar()
-
     st.sidebar.divider()
     st.sidebar.header("新能源数据配置")
 

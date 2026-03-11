@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+import traceback
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.schemas import (
@@ -12,10 +13,11 @@ from backend.schemas import (
     LogHistoryRequest,
     LoginRequest,
     RegisterRequest,
+    ReportRequest,
     StockDataRequest,
     StockNewsRequest,
 )
-from backend.agents.stock_agent import stream_agent
+from backend.agents.stock_agent import run_agent_with_actions, stream_agent
 from backend.serialization import dataframe_to_records, records_to_dataframe
 from backend.services.ai_service import stream_chat
 from backend.services.auth_service import (
@@ -28,6 +30,7 @@ from backend.services.auth_service import (
 )
 from backend.services.forecast_service import generate_forecast
 from backend.services.market_service import get_stock_data, get_stock_name, get_stock_news, init_db
+from backend.services.report_service import generate_stock_report
 
 
 app = FastAPI(title="stock_car v2 backend")
@@ -129,8 +132,33 @@ def ai_chat_stream(payload: ChatRequest):
 def ai_agent_stream(payload: AgentRequest):
     try:
         return StreamingResponse(
-            stream_agent([message.model_dump() for message in payload.messages]),
+            stream_agent([message.model_dump() for message in payload.messages], payload.context),
             media_type="text/plain; charset=utf-8",
         )
     except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/ai/agent/respond")
+def ai_agent_respond(payload: AgentRequest):
+    try:
+        return run_agent_with_actions([message.model_dump() for message in payload.messages], payload.context)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/reports/pdf")
+def generate_pdf_report(payload: ReportRequest):
+    try:
+        pdf_bytes, filename = generate_stock_report(
+            symbol=payload.symbol,
+            stock_name=payload.stock_name,
+            start_date=payload.start_date,
+            end_date=payload.end_date,
+        )
+        safe_filename = f"{payload.symbol}_report.pdf"
+        headers = {"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+    except Exception as exc:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(exc)) from exc

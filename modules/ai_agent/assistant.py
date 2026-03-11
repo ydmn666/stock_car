@@ -4,6 +4,8 @@ import pandas as pd
 import streamlit as st
 
 from frontend.services.api_client import (
+    generate_pdf_report,
+    get_agent_response as api_get_agent_response,
     get_agent_chat_stream as api_get_agent_chat_stream,
     get_deepseek_chat_stream as api_get_deepseek_chat_stream,
 )
@@ -13,11 +15,17 @@ def get_deepseek_chat_stream(messages, temperature=1.1):
     yield from api_get_deepseek_chat_stream(messages, temperature)
 
 
-def get_agent_chat_stream(messages):
-    yield from api_get_agent_chat_stream(messages)
+def get_agent_chat_stream(messages, context=None):
+    yield from api_get_agent_chat_stream(messages, context)
+
+
+def get_agent_response(messages, context=None):
+    return api_get_agent_response(messages, context)
 
 
 def _get_agent_status_text(prompt: str) -> str:
+    if any(keyword in prompt for keyword in ("pdf", "PDF", "报告", "导出", "下载")):
+        return "正在检查当前上下文并准备报告任务..."
     if any(keyword in prompt for keyword in ("新闻", "资讯", "公告", "舆情", "消息")):
         return "正在查询相关新闻并生成分析..."
     if any(keyword in prompt for keyword in ("预测", "趋势", "后市", "未来", "看涨", "看跌")):
@@ -25,14 +33,41 @@ def _get_agent_status_text(prompt: str) -> str:
     return "正在检索数据并生成分析..."
 
 
-def render_ai_assistant_sidebar():
-    with st.expander("AI 选股助手", expanded=True):
+def _is_pdf_request(prompt: str) -> bool:
+    return any(keyword in prompt.lower() for keyword in ("pdf", "download", "report")) or any(
+        keyword in prompt for keyword in ("报告", "导出", "下载")
+    )
+
+
+def _stream_text_to_placeholder(text: str, placeholder):
+    content = ""
+    for char in text:
+        content += char
+        placeholder.markdown(content)
+    return content
+
+
+def _pdf_cache_key(symbol: str, start_date: str, end_date: str) -> str:
+    return f"{symbol}|{start_date}|{end_date}"
+
+
+def render_ai_assistant_sidebar(context=None):
+    with st.sidebar.expander("AI 选股助手", expanded=True):
         if "sidebar_chat" not in st.session_state:
             st.session_state.sidebar_chat = []
+        if "sidebar_pdf_bytes" not in st.session_state:
+            st.session_state.sidebar_pdf_bytes = None
+        if "sidebar_pdf_filename" not in st.session_state:
+            st.session_state.sidebar_pdf_filename = None
+        if "sidebar_pdf_symbol" not in st.session_state:
+            st.session_state.sidebar_pdf_symbol = None
 
         if st.session_state.sidebar_chat:
             if st.button("清空对话历史", use_container_width=True):
                 st.session_state.sidebar_chat = []
+                st.session_state.sidebar_pdf_bytes = None
+                st.session_state.sidebar_pdf_filename = None
+                st.session_state.sidebar_pdf_symbol = None
                 st.rerun()
 
         for msg in st.session_state.sidebar_chat:
@@ -55,10 +90,72 @@ def render_ai_assistant_sidebar():
 
                 status_placeholder = st.empty()
                 status_placeholder.info(_get_agent_status_text(prompt))
-                response = st.write_stream(get_agent_chat_stream(messages))
+
+                if _is_pdf_request(prompt):
+                    result = get_agent_response(messages, context)
+                    response_placeholder = st.empty()
+                    response = _stream_text_to_placeholder(result.get("content", ""), response_placeholder)
+
+                    actions = result.get("actions", [])
+                    for action in actions:
+                        if action.get("type") == "use_existing_pdf":
+                            cache_key = _pdf_cache_key(
+                                action["symbol"],
+                                action["start_date"],
+                                action["end_date"],
+                            )
+                            cached = st.session_state.get("pdf_cache", {}).get(cache_key)
+                            if cached:
+                                st.session_state.sidebar_pdf_bytes = cached["bytes"]
+                                st.session_state.sidebar_pdf_filename = cached["filename"]
+                            st.session_state.sidebar_pdf_symbol = action["symbol"]
+                            continue
+                        if action.get("type") == "generate_pdf":
+                            with st.spinner("正在生成当前选中股票的 PDF 报告..."):
+                                pdf_bytes, filename = generate_pdf_report(
+                                    symbol=action["symbol"],
+                                    stock_name=action.get("stock_name"),
+                                    start_date=action["start_date"],
+                                    end_date=action["end_date"],
+                                )
+                                cache_key = _pdf_cache_key(
+                                    action["symbol"],
+                                    action["start_date"],
+                                    action["end_date"],
+                                )
+                                st.session_state.setdefault("pdf_cache", {})[cache_key] = {
+                                    "symbol": action["symbol"],
+                                    "stock_name": action.get("stock_name"),
+                                    "start_date": action["start_date"],
+                                    "end_date": action["end_date"],
+                                    "bytes": pdf_bytes,
+                                    "filename": filename,
+                                }
+                                st.session_state.sidebar_pdf_bytes = pdf_bytes
+                                st.session_state.sidebar_pdf_filename = filename
+                                st.session_state.sidebar_pdf_symbol = action["symbol"]
+                                st.session_state.pdf_report_bytes = pdf_bytes
+                                st.session_state.pdf_report_filename = filename
+                                st.session_state.pdf_report_symbol = action["symbol"]
+                else:
+                    response = st.write_stream(get_agent_chat_stream(messages, context))
                 status_placeholder.empty()
 
             st.session_state.sidebar_chat.append({"role": "assistant", "content": response})
+
+        if (
+            st.session_state.sidebar_pdf_bytes
+            and st.session_state.sidebar_pdf_filename
+            and st.session_state.sidebar_pdf_symbol
+        ):
+            st.download_button(
+                label="下载侧边栏生成的 PDF",
+                data=st.session_state.sidebar_pdf_bytes,
+                file_name=st.session_state.sidebar_pdf_filename,
+                mime="application/pdf",
+                use_container_width=True,
+                key=f"sidebar_pdf_{st.session_state.sidebar_pdf_symbol}",
+            )
 
 
 def build_technical_prompt(ticker_name, df, all_data=None):
