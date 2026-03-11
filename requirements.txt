@@ -2,6 +2,7 @@ streamlit
 akshare
 pandas
 plotly
+kaleido
 matplotlib
 prophet
 reportlab

@@ -19,6 +19,31 @@ def show_logout_dialog():
             st.session_state.is_logged_in = False
             st.session_state.enter_system_clicked = False
             st.session_state.current_user = None
+            for key in [
+                "analysis_started",
+                "chat_history_tech",
+                "chat_history_pred",
+                "current_ticker",
+                "current_ticker_code",
+                "analysis_start_date",
+                "analysis_end_date",
+                "sidebar_chat",
+                "pdf_cache",
+                "pdf_generation_future",
+                "pdf_generation_meta",
+                "pdf_generation_pending",
+                "pdf_generation_session",
+                "pdf_report_bytes",
+                "pdf_report_filename",
+                "pdf_report_symbol",
+                "sidebar_pdf_bytes",
+                "sidebar_pdf_filename",
+                "sidebar_pdf_symbol",
+                "sentiment_score",
+                "sentiment_text",
+            ]:
+                if key in st.session_state:
+                    st.session_state.pop(key)
             st.rerun()
     with col2:
         if st.button("取消", use_container_width=True):

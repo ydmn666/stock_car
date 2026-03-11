@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import date, datetime
 
 import pandas as pd
@@ -53,7 +54,18 @@ def _dataframe_to_records(df: pd.DataFrame | None) -> list[dict]:
 
 def _request(method: str, path: str, **kwargs):
     response = requests.request(method, f"{_base_url()}{path}", timeout=DEFAULT_TIMEOUT, **kwargs)
-    response.raise_for_status()
+    if not response.ok:
+        detail = ""
+        try:
+            payload = response.json()
+            if isinstance(payload, dict):
+                detail = payload.get("detail", "")
+        except Exception:
+            detail = response.text[:500]
+        message = f"{response.status_code} Server Error: {response.reason} for url: {response.url}"
+        if detail:
+            message = f"{message}\n后端详情: {detail}"
+        raise requests.HTTPError(message, response=response)
     return response
 
 
@@ -147,11 +159,11 @@ def get_deepseek_chat_stream(messages: list[dict], temperature: float = 1.1):
         yield f"⚠️ **AI 连接失败**: {exc}\n\n请检查后端服务、API Key 和网络。"
 
 
-def get_agent_chat_stream(messages: list[dict]):
+def get_agent_chat_stream(messages: list[dict], context: dict | None = None):
     try:
         with requests.post(
             f"{_base_url()}/ai/agent/stream",
-            json={"messages": messages},
+            json={"messages": messages, "context": context or {}},
             timeout=(10, 300),
             stream=True,
         ) as response:
@@ -161,3 +173,33 @@ def get_agent_chat_stream(messages: list[dict]):
                     yield chunk
     except Exception as exc:
         yield f"⚠️ **Agent 连接失败**: {exc}\n\n请检查后端服务、API Key 和网络。"
+
+
+def get_agent_response(messages: list[dict], context: dict | None = None) -> dict:
+    response = _request(
+        "POST",
+        "/ai/agent/respond",
+        json={"messages": messages, "context": context or {}},
+    )
+    payload = response.json()
+    return {"content": payload.get("content", ""), "actions": payload.get("actions", [])}
+
+
+def generate_pdf_report(symbol: str, start_date, end_date, stock_name: str | None = None):
+    response = _request(
+        "POST",
+        "/reports/pdf",
+        json={
+            "symbol": symbol,
+            "stock_name": stock_name,
+            "start_date": _date_to_str(start_date),
+            "end_date": _date_to_str(end_date),
+        },
+    )
+
+    disposition = response.headers.get("Content-Disposition", "")
+    match = re.search(r'filename="([^"]+)"', disposition)
+    filename = match.group(1) if match else f"{symbol}_report.pdf"
+    if stock_name:
+        filename = f"{stock_name}_{symbol}_report.pdf"
+    return response.content, filename
