@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
+import hashlib
+import re
+from datetime import date, datetime, timedelta
 from html import escape
 from io import BytesIO
-import re
+from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -15,13 +17,19 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from sqlalchemy import delete, select
 
 from backend.agents.stock_agent import run_agent
+from backend.db import ROOT_DIR, SessionLocal
+from backend.models import AIReport
 from backend.services.forecast_service import generate_forecast
-from backend.services.market_service import get_stock_data, get_stock_name, get_stock_news
+from backend.services.market_service import get_stock_data, get_stock_name, get_stock_news, init_db
 
 
 pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
+
+REPORTS_DIR = ROOT_DIR / "storage" / "reports"
+PDF_RETENTION_DAYS = 7
 
 
 def _build_styles():
@@ -89,6 +97,23 @@ def _paragraphs_from_markdown(text: str, style: ParagraphStyle) -> list[Paragrap
             line = f"• {line[2:]}"
         lines.append(Paragraph(escape(line), style))
     return lines or [Paragraph("暂无内容。", style)]
+
+
+def _date_range_key(start_date: str, end_date: str) -> str:
+    return f"{start_date}:{end_date}"
+
+
+def _date_hash(symbol: str, date_range: str) -> str:
+    return hashlib.sha256(f"{symbol}:{date_range}".encode("utf-8")).hexdigest()[:16]
+
+
+def _report_basename(symbol: str, date_range: str) -> str:
+    return f"report_{symbol}_{_date_hash(symbol, date_range)}.pdf"
+
+
+def _report_path(symbol: str, date_range: str) -> Path:
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    return REPORTS_DIR / _report_basename(symbol, date_range)
 
 
 def _build_kline_figure(df: pd.DataFrame) -> go.Figure:
@@ -237,9 +262,7 @@ def _build_forecast_figure(forecast_df: pd.DataFrame | None, stock_df: pd.DataFr
 
 
 def _figure_to_image(fig: go.Figure, width: int, height: int) -> BytesIO:
-    buffer = BytesIO(
-        pio.to_image(fig, format="png", width=width, height=height, engine="kaleido")
-    )
+    buffer = BytesIO(pio.to_image(fig, format="png", width=width, height=height, engine="kaleido"))
     buffer.seek(0)
     return buffer
 
@@ -275,28 +298,14 @@ def _build_summary_table(stock_df: pd.DataFrame) -> Table:
     latest = sorted_df.iloc[-1]
     first = sorted_df.iloc[0]
 
-    close_col = "收盘"
-    high_col = "最高"
-    low_col = "最低"
-    turnover_col = "换手率"
-    volume_col = "成交量"
-
-    total_return = (latest[close_col] - first[close_col]) / first[close_col] * 100 if first[close_col] else 0
-    latest_turnover = (
-        f"{latest[turnover_col]:.2f}%"
-        if turnover_col in stock_df.columns and pd.notna(latest[turnover_col])
-        else "暂无"
-    )
-    latest_volume = (
-        f"{latest[volume_col]:.0f}"
-        if volume_col in stock_df.columns and pd.notna(latest[volume_col])
-        else "暂无"
-    )
-    high_text = f"{stock_df[high_col].max():.2f}" if high_col in stock_df.columns else "暂无"
-    low_text = f"{stock_df[low_col].min():.2f}" if low_col in stock_df.columns else "暂无"
+    total_return = (latest["收盘"] - first["收盘"]) / first["收盘"] * 100 if first["收盘"] else 0
+    latest_turnover = f'{latest["换手率"]:.2f}%' if pd.notna(latest.get("换手率")) else "暂无"
+    latest_volume = f'{latest["成交量"]:.0f}' if pd.notna(latest.get("成交量")) else "暂无"
+    high_text = f'{stock_df["最高"].max():.2f}' if "最高" in stock_df.columns else "暂无"
+    low_text = f'{stock_df["最低"].min():.2f}' if "最低" in stock_df.columns else "暂无"
 
     rows = [
-        ["最新收盘价", f"{latest[close_col]:.2f}"],
+        ["最新收盘价", f'{latest["收盘"]:.2f}'],
         ["区间涨跌幅", f"{total_return:.2f}%"],
         ["区间最高价", high_text],
         ["区间最低价", low_text],
@@ -320,33 +329,17 @@ def _build_summary_table(stock_df: pd.DataFrame) -> Table:
     return table
 
 
-def generate_stock_report(
+def _build_report_pdf(
     symbol: str,
+    resolved_name: str,
     start_date: str,
     end_date: str,
-    stock_name: str | None = None,
-) -> tuple[bytes, str]:
-    start_value = datetime.strptime(start_date, "%Y-%m-%d").date()
-    end_value = datetime.strptime(end_date, "%Y-%m-%d").date()
-
-    resolved_name = stock_name or get_stock_name(symbol)
-    stock_df = get_stock_data(symbol, start_value, end_value)
-    if stock_df is None or stock_df.empty:
-        raise ValueError(f"未获取到 {symbol} 的股票数据，无法生成报告。")
-
-    news_df, is_fallback = get_stock_news(symbol, resolved_name, limit=8)
-    forecast_df = generate_forecast(stock_df, days=7)
-
-    summary_prompt = (
-        f"请基于 {resolved_name}({symbol}) 的行情、新闻和预测信息，"
-        "生成一份适合放入 PDF 报告的简洁总结。要求："
-        "1. 先给出核心结论；"
-        "2. 再分别说明行情、新闻、预测三个方面；"
-        "3. 最后给出风险提示；"
-        "4. 输出控制在 6 到 10 行以内。"
-    )
-    agent_summary = run_agent([{"role": "user", "content": summary_prompt}])
-
+    stock_df: pd.DataFrame,
+    news_df: pd.DataFrame | None,
+    is_fallback: bool,
+    forecast_df: pd.DataFrame | None,
+    agent_summary: str,
+) -> bytes:
     styles = _build_styles()
     story = []
 
@@ -365,35 +358,13 @@ def generate_stock_report(
     story.append(Spacer(1, 0.4 * cm))
 
     story.append(Paragraph("二、K 线与均线", styles["CNHeading"]))
-    _append_chart_or_fallback(
-        story,
-        _build_kline_figure(stock_df),
-        1100,
-        520,
-        styles,
-        "K 线图暂时无法导出静态图片，当前报告已保留文字分析与其余图表内容。",
-    )
+    _append_chart_or_fallback(story, _build_kline_figure(stock_df), 1100, 520, styles, "图片暂不可用")
 
     story.append(Paragraph("三、区间收益率", styles["CNHeading"]))
-    _append_chart_or_fallback(
-        story,
-        _build_return_figure(stock_df),
-        1100,
-        420,
-        styles,
-        "收益率图暂时无法导出静态图片，当前报告已保留核心结论。",
-    )
+    _append_chart_or_fallback(story, _build_return_figure(stock_df), 1100, 420, styles, "图片暂不可用")
 
-    if forecast_df is not None and not forecast_df.empty:
-        story.append(Paragraph("四、趋势预测", styles["CNHeading"]))
-        _append_chart_or_fallback(
-            story,
-            _build_forecast_figure(forecast_df, stock_df),
-            1100,
-            420,
-            styles,
-            "预测图暂时无法导出静态图片，当前报告已保留预测文字摘要。",
-        )
+    story.append(Paragraph("四、趋势预测", styles["CNHeading"]))
+    _append_chart_or_fallback(story, _build_forecast_figure(forecast_df, stock_df), 1100, 420, styles, "图片暂不可用")
 
     story.append(Paragraph("五、新闻摘要", styles["CNHeading"]))
     if news_df is None or news_df.empty:
@@ -435,6 +406,137 @@ def generate_stock_report(
         bottomMargin=1.2 * cm,
     )
     doc.build(story)
-    pdf_bytes = buffer.getvalue()
-    filename = f"{_sanitize_filename(resolved_name)}_{symbol}_report.pdf"
-    return pdf_bytes, filename
+    return buffer.getvalue()
+
+
+def _load_cached_report(symbol: str, date_range: str) -> tuple[AIReport | None, Path]:
+    path = _report_path(symbol, date_range)
+    with SessionLocal() as session:
+        report = session.execute(
+            select(AIReport).where(AIReport.stock_code == symbol, AIReport.date_range == date_range)
+        ).scalar_one_or_none()
+    return report, path
+
+
+def _is_created_today(created_at: datetime) -> bool:
+    return created_at.date() == date.today()
+
+
+def _write_report_file(path: Path, pdf_bytes: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(pdf_bytes)
+
+
+def _upsert_report_index(
+    symbol: str,
+    date_range: str,
+    file_path: Path,
+    report_json: dict,
+) -> None:
+    now = datetime.now()
+    with SessionLocal() as session:
+        report = session.execute(
+            select(AIReport).where(AIReport.stock_code == symbol, AIReport.date_range == date_range)
+        ).scalar_one_or_none()
+        if report is None:
+            session.add(
+                AIReport(
+                    stock_code=symbol,
+                    date_range=date_range,
+                    file_path=str(file_path),
+                    report_json=report_json,
+                    created_at=now,
+                )
+            )
+        else:
+            report.file_path = str(file_path)
+            report.report_json = report_json
+            report.created_at = now
+        session.commit()
+
+
+def get_or_create_stock_report(
+    symbol: str,
+    start_date: str,
+    end_date: str,
+    stock_name: str | None = None,
+) -> tuple[bytes, str]:
+    init_db()
+    date_range = _date_range_key(start_date, end_date)
+    cached_report, report_path = _load_cached_report(symbol, date_range)
+    if cached_report and report_path.exists() and _is_created_today(cached_report.created_at):
+        return report_path.read_bytes(), report_path.name
+
+    start_value = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end_value = datetime.strptime(end_date, "%Y-%m-%d").date()
+    resolved_name = stock_name or get_stock_name(symbol)
+    stock_df = get_stock_data(symbol, start_value, end_value)
+    if stock_df is None or stock_df.empty:
+        raise ValueError(f"未获取到 {symbol} 的股票数据，无法生成报告。")
+
+    news_df, is_fallback = get_stock_news(symbol, resolved_name, limit=8)
+    forecast_df = generate_forecast(stock_df, days=7)
+
+    summary_prompt = (
+        f"请基于 {resolved_name}({symbol}) 的行情、新闻和预测信息，"
+        "生成一份适合放入 PDF 报告的简洁总结。要求："
+        "1. 先给出核心结论；"
+        "2. 再分别说明行情、新闻、预测三个方面；"
+        "3. 最后给出风险提示；"
+        "4. 输出控制在 6 到 10 行以内。"
+    )
+    agent_summary = run_agent([{"role": "user", "content": summary_prompt}])
+    pdf_bytes = _build_report_pdf(
+        symbol=symbol,
+        resolved_name=resolved_name,
+        start_date=start_date,
+        end_date=end_date,
+        stock_df=stock_df,
+        news_df=news_df,
+        is_fallback=is_fallback,
+        forecast_df=forecast_df,
+        agent_summary=agent_summary,
+    )
+
+    _write_report_file(report_path, pdf_bytes)
+    _upsert_report_index(
+        symbol=symbol,
+        date_range=date_range,
+        file_path=report_path,
+        report_json={
+            "summary": agent_summary,
+            "stock_name": resolved_name,
+            "start_date": start_date,
+            "end_date": end_date,
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+        },
+    )
+    return pdf_bytes, report_path.name
+
+
+def cleanup_expired_reports(retention_days: int = PDF_RETENTION_DAYS) -> int:
+    init_db()
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    cutoff = datetime.now() - timedelta(days=retention_days)
+    removed_files: list[str] = []
+
+    for path in REPORTS_DIR.glob("*.pdf"):
+        try:
+            modified_at = datetime.fromtimestamp(path.stat().st_mtime)
+            if modified_at < cutoff:
+                path.unlink()
+                removed_files.append(str(path))
+        except FileNotFoundError:
+            continue
+
+    with SessionLocal() as session:
+        if removed_files:
+            session.execute(delete(AIReport).where(AIReport.file_path.in_(removed_files)))
+
+        indexed_reports = session.execute(select(AIReport)).scalars().all()
+        for report in indexed_reports:
+            if not Path(report.file_path).exists():
+                session.delete(report)
+        session.commit()
+
+    return len(removed_files)

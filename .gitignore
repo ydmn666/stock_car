@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 *.pyc
 .streamlit/
+.env
+web/.env
+web/node_modules/
+web/dist/

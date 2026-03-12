@@ -1,4 +1,4 @@
-# stock_car v2 API Reference
+# stock_car v4 API Reference
 
 Base URL default: `http://127.0.0.1:8000`
 
@@ -6,17 +6,17 @@ Base URL default: `http://127.0.0.1:8000`
 
 `GET /health`
 
-Returns backend liveness.
+返回后端存活状态。
 
-## Stock Data
+## Stock
 
 `GET /stocks/name/{symbol}`
 
-Returns stock display name for a code.
+返回股票名称。
 
 `POST /stocks/data`
 
-Request:
+请求：
 
 ```json
 {
@@ -26,7 +26,7 @@ Request:
 }
 ```
 
-Response:
+返回：
 
 ```json
 {
@@ -39,9 +39,15 @@ Response:
 }
 ```
 
+说明：
+
+- 后端优先从数据库读取
+- 数据缺失时自动联网补全
+- 补全后写回数据库
+
 `POST /stocks/news`
 
-Request:
+请求：
 
 ```json
 {
@@ -51,7 +57,14 @@ Request:
 }
 ```
 
-Response returns `records` and `is_fallback`.
+返回：
+
+```json
+{
+  "records": [],
+  "is_fallback": false
+}
+```
 
 ## Auth And History
 
@@ -59,7 +72,7 @@ Response returns `records` and `is_fallback`.
 
 `POST /auth/login`
 
-Request:
+请求：
 
 ```json
 {
@@ -70,11 +83,11 @@ Request:
 
 `GET /users/{username}/history`
 
-Returns recent analysis history.
+返回用户历史访问记录。
 
 `POST /users/history/log`
 
-Request:
+请求：
 
 ```json
 {
@@ -86,17 +99,17 @@ Request:
 
 `DELETE /users/history/{item_id}`
 
-Deletes one history item.
+删除单条历史。
 
 `DELETE /users/{username}/history`
 
-Clears all history for a user.
+清空当前用户全部历史。
 
 ## Forecast
 
 `POST /forecast`
 
-Request:
+请求：
 
 ```json
 {
@@ -110,28 +123,83 @@ Request:
 }
 ```
 
-Response returns Prophet forecast records.
+返回 Prophet 预测结果。
 
 ## AI
 
 `POST /ai/chat/stream`
 
-Request:
+通用聊天流式输出接口。
+
+请求：
 
 ```json
 {
   "messages": [
     {
-      "role": "system",
-      "content": "..."
-    },
-    {
       "role": "user",
-      "content": "..."
+      "content": "请分析比亚迪"
     }
   ],
   "temperature": 0.6
 }
 ```
 
-Response is a plain text stream for incremental chat output.
+返回：`text/plain` 流式文本。
+
+`POST /ai/chat/respond`
+
+非流式聊天接口。
+
+`POST /ai/agent/stream`
+
+通用 Agent 流式接口。
+
+请求：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "帮我看看宁德时代"
+    }
+  ],
+  "context": {
+    "analysis_ready": true,
+    "current_stock_name": "宁德时代",
+    "current_stock_code": "300750",
+    "start_date": "2025-03-01",
+    "end_date": "2026-03-10",
+    "pdf_ready_for_current_stock": true
+  }
+}
+```
+
+`POST /ai/agent/respond`
+
+返回 Agent 最终内容与动作信息。
+
+## PDF
+
+`POST /reports/pdf`
+
+请求：
+
+```json
+{
+  "symbol": "002594",
+  "stock_name": "比亚迪",
+  "start_date": "2025-03-01",
+  "end_date": "2026-03-10"
+}
+```
+
+返回：`application/pdf`
+
+行为说明：
+
+- 同参数且当天已生成：直接返回缓存 PDF
+- 同参数跨天：覆盖同名文件并更新时间
+- 区间变化：生成新文件
+- 图表导出失败时仍会生成纯文字降级版 PDF

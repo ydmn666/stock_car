@@ -1,40 +1,33 @@
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
 
-from backend.services.market_service import DB_FILE, hash_password, init_db
+from sqlalchemy import delete, select
+
+from backend.db import SessionLocal
+from backend.models import User, UserHistory
+from backend.services.market_service import hash_password, init_db
 
 
 def register_user(username: str, password: str):
     init_db()
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-            (username, hash_password(password)),
-        )
-        conn.commit()
+    with SessionLocal() as session:
+        existing = session.get(User, username)
+        if existing is not None:
+            return False, "该用户名已被占用。"
+
+        session.add(User(username=username, password_hash=hash_password(password)))
+        session.commit()
         return True, "注册成功，请登录。"
-    except sqlite3.IntegrityError:
-        return False, "该用户名已被占用。"
-    finally:
-        conn.close()
 
 
 def login_user(username: str, password: str) -> bool:
     init_db()
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "SELECT 1 FROM users WHERE username = ? AND password_hash = ?",
-            (username, hash_password(password)),
-        )
-        return cursor.fetchone() is not None
-    finally:
-        conn.close()
+    with SessionLocal() as session:
+        user = session.get(User, username)
+        if user is None:
+            return False
+        return user.password_hash == hash_password(password)
 
 
 def log_history(username: str, stock_name: str, stock_code: str) -> None:
@@ -42,83 +35,62 @@ def log_history(username: str, stock_name: str, stock_code: str) -> None:
         return
 
     init_db()
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "SELECT id, stock_code FROM user_history WHERE username = ? ORDER BY id DESC LIMIT 1",
-            (username,),
-        )
-        last = cursor.fetchone()
-        current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-        if last and last[1] == stock_code:
-            cursor.execute(
-                """
-                UPDATE user_history
-                SET visit_time_str = ?, timestamp = CURRENT_TIMESTAMP
-                WHERE id = ?
-                """,
-                (current_time_str, last[0]),
-            )
+    with SessionLocal() as session:
+        last = session.execute(
+            select(UserHistory)
+            .where(UserHistory.username == username)
+            .order_by(UserHistory.id.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+
+        current_time = datetime.now()
+        current_time_str = current_time.strftime("%Y-%m-%d %H:%M")
+        if last and last.stock_code == stock_code:
+            last.visit_time_str = current_time_str
+            last.timestamp = current_time
         else:
-            cursor.execute(
-                """
-                INSERT INTO user_history (username, stock_name, stock_code, visit_time_str)
-                VALUES (?, ?, ?, ?)
-                """,
-                (username, stock_name, stock_code, current_time_str),
+            session.add(
+                UserHistory(
+                    username=username,
+                    stock_name=stock_name,
+                    stock_code=stock_code,
+                    visit_time_str=current_time_str,
+                    timestamp=current_time,
+                )
             )
-        conn.commit()
-    finally:
-        conn.close()
+        session.commit()
 
 
 def get_user_history(username: str) -> list[dict]:
     init_db()
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            """
-            SELECT id, stock_name, stock_code, visit_time_str
-            FROM user_history
-            WHERE username = ?
-            ORDER BY id DESC
-            LIMIT 20
-            """,
-            (username,),
-        )
-        rows = cursor.fetchall()
-        return [
-            {
-                "id": row[0],
-                "stock_name": row[1],
-                "stock_code": row[2],
-                "visit_time_str": row[3],
-            }
-            for row in rows
-        ]
-    finally:
-        conn.close()
+    with SessionLocal() as session:
+        rows = session.execute(
+            select(UserHistory)
+            .where(UserHistory.username == username)
+            .order_by(UserHistory.id.desc())
+            .limit(20)
+        ).scalars().all()
+
+    return [
+        {
+            "id": row.id,
+            "stock_name": row.stock_name,
+            "stock_code": row.stock_code,
+            "visit_time_str": row.visit_time_str,
+        }
+        for row in rows
+    ]
 
 
 def delete_history_item(item_id: int) -> None:
     init_db()
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("DELETE FROM user_history WHERE id = ?", (item_id,))
-        conn.commit()
-    finally:
-        conn.close()
+    with SessionLocal() as session:
+        session.execute(delete(UserHistory).where(UserHistory.id == item_id))
+        session.commit()
 
 
 def delete_all_user_history(username: str) -> None:
     init_db()
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("DELETE FROM user_history WHERE username = ?", (username,))
-        conn.commit()
-    finally:
-        conn.close()
+    with SessionLocal() as session:
+        session.execute(delete(UserHistory).where(UserHistory.username == username))
+        session.commit()

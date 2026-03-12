@@ -4,6 +4,7 @@ from datetime import datetime
 import traceback
 
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.schemas import (
@@ -19,7 +20,7 @@ from backend.schemas import (
 )
 from backend.agents.stock_agent import run_agent_with_actions, stream_agent
 from backend.serialization import dataframe_to_records, records_to_dataframe
-from backend.services.ai_service import stream_chat
+from backend.services.ai_service import respond_chat, stream_chat
 from backend.services.auth_service import (
     delete_all_user_history,
     delete_history_item,
@@ -30,15 +31,27 @@ from backend.services.auth_service import (
 )
 from backend.services.forecast_service import generate_forecast
 from backend.services.market_service import get_stock_data, get_stock_name, get_stock_news, init_db
-from backend.services.report_service import generate_stock_report
+from backend.services.report_service import cleanup_expired_reports, get_or_create_stock_report
 
 
 app = FastAPI(title="stock_car v2 backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
 def on_startup():
     init_db()
+    cleanup_expired_reports()
 
 
 @app.get("/health")
@@ -123,7 +136,20 @@ def ai_chat_stream(payload: ChatRequest):
         return StreamingResponse(
             stream_chat([message.model_dump() for message in payload.messages], payload.temperature),
             media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
         )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/ai/chat/respond")
+def ai_chat_respond(payload: ChatRequest):
+    try:
+        content = respond_chat([message.model_dump() for message in payload.messages], payload.temperature)
+        return {"content": content}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -134,6 +160,10 @@ def ai_agent_stream(payload: AgentRequest):
         return StreamingResponse(
             stream_agent([message.model_dump() for message in payload.messages], payload.context),
             media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -150,14 +180,13 @@ def ai_agent_respond(payload: AgentRequest):
 @app.post("/reports/pdf")
 def generate_pdf_report(payload: ReportRequest):
     try:
-        pdf_bytes, filename = generate_stock_report(
+        pdf_bytes, filename = get_or_create_stock_report(
             symbol=payload.symbol,
             stock_name=payload.stock_name,
             start_date=payload.start_date,
             end_date=payload.end_date,
         )
-        safe_filename = f"{payload.symbol}_report.pdf"
-        headers = {"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
     except Exception as exc:
         traceback.print_exc()
