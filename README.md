@@ -1,53 +1,59 @@
-# stock_car
+# stock_car v4
 
-新能源汽车股票分析系统，当前版本基于 `Streamlit + FastAPI + LangChain`。
+新能源车股票分析系统，当前版本基于 `React + TypeScript + Tailwind + FastAPI + PostgreSQL + DeepSeek`。
 
-## 项目概览
+## 当前版本概览
 
-- `v1.0`：基于 Streamlit 的单体版本，完成股票分析、对比、预测、AI 问答等核心功能。
-- `v2.0`：完成前后端分离，引入 FastAPI，前端通过 HTTP API 访问后端服务。
-- `v3.1`：引入 LangChain Agent，让系统从普通对话升级为可调用工具的智能助手。
-- `v3.2`：增加固定模板 PDF 报告导出能力。
-- `v3.3`：让 Agent 读取页面上下文，支持基于当前选中股票生成和下载 PDF，并加入会话级临时缓存与后台预生成。
+- 前端已从 `Streamlit` 迁移到 `Vite + React`
+- 后端统一由 `FastAPI` 提供接口
+- 用户登录、访问历史、股票历史数据、AI 报告索引统一入库
+- 股票行情采用“本地优先 + 增量补全”的缓存策略
+- PDF 报告采用“文件系统落盘 + PostgreSQL 索引”的双层缓存
+- 通用 Agent 与四个专用功能页分离
+
+## v4 核心能力
+
+- 登录 / 注册
+- 选股、历史记录、访问历史删除与清空
+- 基础数据展示
+- 技术分析与交互图表
+- 未来 7 天趋势预测
+- 新闻与舆情分析
+- 通用 Agent 聊天
+- PDF 报告生成、缓存命中、重复下载
 
 ## 当前架构
 
-- 前端：`Streamlit`
-- 后端：`FastAPI`
-- AI：`DeepSeek + LangChain Agent`
-- 数据库：`SQLite`
-- 图表：`Plotly`
-- 报告：`ReportLab`
+- 前端：`web/`，基于 `React + TypeScript + Tailwind + Plotly`
+- 后端：`backend/`，基于 `FastAPI`
+- 数据库：`PostgreSQL`
+- AI：`DeepSeek`
+- 图表：`Plotly + Kaleido`
+- PDF：`ReportLab`
+- 本地文件缓存：`storage/reports/`
 
-## 环境准备
+## 目录说明
 
-建议使用 Python `3.10.x`。
+- `backend/`：FastAPI 后端、数据库模型、服务层、Agent
+- `web/`：React 前端
+- `storage/reports/`：本地 PDF 报告缓存目录
+- `modules/`：旧版图表/分析模块参考代码
+- `app.py`：旧版 Streamlit 入口，现主要作为历史版本参考
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+## 环境变量
+
+建议使用 `.env`：
+
+```env
+DEEPSEEK_API_KEY=your_key
+DATABASE_URL=postgresql+psycopg://user:password@127.0.0.1:5432/stock_car
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-## 配置密钥
+说明：
 
-先复制配置模板：
-
-```powershell
-Copy-Item .streamlit\secrets.toml.example .streamlit\secrets.toml
-```
-
-然后在 `.streamlit/secrets.toml` 中配置：
-
-- `DEEPSEEK_API_KEY`
-- `BACKEND_BASE_URL`
-
-默认后端地址可使用：
-
-```toml
-BACKEND_BASE_URL = "http://127.0.0.1:8000"
-```
+- 后端优先读取 `DEEPSEEK_API_KEY`
+- `.streamlit/secrets.toml` 目前只保留兼容兜底，不再是推荐配置方式
 
 ## 启动方式
 
@@ -60,20 +66,23 @@ BACKEND_BASE_URL = "http://127.0.0.1:8000"
 前端：
 
 ```powershell
-.\.venv\Scripts\streamlit.exe run app.py
+cd web
+npm install
+npm run dev
 ```
 
-## 当前主要能力
+## PDF 缓存策略
 
-- 多股票对比分析
-- K 线与收益率可视化
-- Prophet 趋势预测
-- 舆情与情绪分析
-- LangChain Agent 智能问答
-- 基于当前选中股票的 PDF 报告生成与下载
+- 文件落盘目录：`storage/reports/`
+- 文件名格式：`report_{stock_code}_{date_hash}.pdf`
+- 数据库索引表：`ai_reports`
+- 同一股票 + 同一区间 + 当天已生成：直接命中缓存
+- 同一参数跨天：覆盖同名文件并更新索引时间
+- 日期区间变化：生成新文件
+- 应用启动时自动清理 7 天前的 PDF 文件与失效索引
 
 ## 说明
 
-- `.venv/`、`.streamlit/`、`__pycache__/`、`*.db` 等文件通常不应提交到 Git。
-- `stock_data.db` 会在本地首次运行时自动创建。
-- 当前版本仍使用 Streamlit 作为前端原型框架，后续计划升级为更适合产品化的前端技术栈。
+- 真实缓存命中逻辑在后端，不依赖前端内存状态
+- PDF 下载前必须先生成当前股票的分析数据
+- 图表已拆分为懒加载 chunk，但 Plotly 体积仍然较大

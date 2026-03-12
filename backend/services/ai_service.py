@@ -40,3 +40,17 @@ def stream_chat(messages: list[dict], temperature: float = 1.1):
         content = chunk.choices[0].delta.content
         if content:
             yield content
+
+
+def respond_chat(messages: list[dict], temperature: float = 1.1) -> str:
+    api_key = load_deepseek_api_key()
+    if not api_key:
+        raise RuntimeError("Missing DEEPSEEK_API_KEY.")
+
+    client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=messages,
+        temperature=temperature,
+    )
+    return response.choices[0].message.content or ""
