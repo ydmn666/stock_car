@@ -43,13 +43,13 @@
 
 ## 当前架构
 
-- 前端：[`/d:/CodexProject/stock_car/web`](d:\CodexProject\stock_car\web)，基于 `React + TypeScript + Tailwind CSS + Plotly`
-- 后端：[`/d:/CodexProject/stock_car/backend`](d:\CodexProject\stock_car\backend)，基于 `FastAPI`
+- 前端：`web/`，基于 `React + TypeScript + Tailwind CSS + Plotly`
+- 后端：`backend/`，基于 `FastAPI`
 - 数据库：`PostgreSQL`
 - 大模型：`DeepSeek`
 - 图表导出：`Plotly + Kaleido`
 - PDF 生成：`ReportLab`
-- 报告缓存：[`/d:/CodexProject/stock_car/storage/reports`](d:\CodexProject\stock_car\storage\reports)
+- 报告缓存：`storage/reports/`
 
 ## Docker 部署说明
 
