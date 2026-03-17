@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import os
+from backend.utils.network_env import disable_proxy_env
+disable_proxy_env()
 import re
+import os
 from pathlib import Path
 
 from openai import OpenAI

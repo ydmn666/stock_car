@@ -1,88 +1,124 @@
-# stock_car v4
+# stock_car v4.1
 
-新能源车股票分析系统，当前版本基于 `React + TypeScript + Tailwind + FastAPI + PostgreSQL + DeepSeek`。
+新能源车股票分析系统，当前版本基于 `React + TypeScript + Tailwind CSS + FastAPI + PostgreSQL + DeepSeek`。
 
-## 当前版本概览
+项目支持股票基础数据查询、技术分析图表、新闻与舆情分析、未来趋势预测、Agent 问答，以及 PDF 研报导出。`v4.1` 在 `v4.0` 的基础上补齐了容器化部署链路，并修复了 Docker 环境下 Plotly 导出 PDF 图表时的中文字体与渲染问题。
 
-- 前端已从 `Streamlit` 迁移到 `Vite + React`
-- 后端统一由 `FastAPI` 提供接口
-- 用户登录、访问历史、股票历史数据、AI 报告索引统一入库
-- 股票行情采用“本地优先 + 增量补全”的缓存策略
-- PDF 报告采用“文件系统落盘 + PostgreSQL 索引”的双层缓存
-- 通用 Agent 与四个专用功能页分离
+## v4.1 更新内容
 
-## v4 核心能力
+- 新增 `Docker Compose` 部署方案，统一编排 `frontend / backend / db`
+- 引入 `Nginx` 作为前端静态资源与后端 API 的统一入口
+- 支持通过 `cpolar` 暴露公网访问链路，便于演示与异地联调
+- 后端 Docker 镜像补充 `Google Chrome + Noto CJK` 字体，修复 `kaleido` 在容器中的浏览器依赖问题
+- 统一 Plotly PDF 导出字体配置，解决中文标题、图例、坐标轴在 PNG/PDF 中乱码或方块的问题
+- 优化环境变量与目录组织，便于本地开发与容器部署保持一致
 
-- 登录 / 注册
-- 选股、历史记录、访问历史删除与清空
-- 基础数据展示
-- 技术分析与交互图表
+## v4.0 到 v4.1 的功能迭代
+
+### v4.0
+
+- 完成从 `Streamlit` 向 `React + FastAPI` 架构迁移
+- 前后端分离，前端负责交互与展示，后端负责数据、AI 和 PDF 报告生成
+- 引入 `PostgreSQL` 管理用户、访问记录和报告索引
+- 实现 PDF 报告文件落盘与数据库索引双层缓存
+- 集成 Agent 能力，支持围绕当前股票上下文进行问答与报告生成
+
+### v4.1
+
+- 增加容器化交付能力，补齐 `backend/Dockerfile`、`web/Dockerfile` 与 `docker-compose.yml`
+- 增加 `Nginx` 反向代理，减少前后端联调时的跨域与入口配置成本
+- 增加 `cpolar` 公网演示方案，方便在非局域网环境下访问系统
+- 加强 Docker 运行时图表导出能力，确保 `Plotly + Kaleido + ReportLab` 在 Linux 容器中稳定工作
+
+## 核心功能
+
+- 用户注册、登录
+- 股票名称查询与基础行情查询
+- 技术分析图表展示
+- 新闻与舆情信息分析
 - 未来 7 天趋势预测
-- 新闻与舆情分析
-- 通用 Agent 聊天
-- PDF 报告生成、缓存命中、重复下载
+- Agent 智能问答
+- PDF 研报生成、缓存命中与重复下载
+- 用户历史访问记录管理
 
 ## 当前架构
 
-- 前端：`web/`，基于 `React + TypeScript + Tailwind + Plotly`
-- 后端：`backend/`，基于 `FastAPI`
+- 前端：[`/d:/CodexProject/stock_car/web`](d:\CodexProject\stock_car\web)，基于 `React + TypeScript + Tailwind CSS + Plotly`
+- 后端：[`/d:/CodexProject/stock_car/backend`](d:\CodexProject\stock_car\backend)，基于 `FastAPI`
 - 数据库：`PostgreSQL`
-- AI：`DeepSeek`
-- 图表：`Plotly + Kaleido`
-- PDF：`ReportLab`
-- 本地文件缓存：`storage/reports/`
+- 大模型：`DeepSeek`
+- 图表导出：`Plotly + Kaleido`
+- PDF 生成：`ReportLab`
+- 报告缓存：[`/d:/CodexProject/stock_car/storage/reports`](d:\CodexProject\stock_car\storage\reports)
 
-## 目录说明
+## Docker 部署说明
 
-- `backend/`：FastAPI 后端、数据库模型、服务层、Agent
-- `web/`：React 前端
-- `storage/reports/`：本地 PDF 报告缓存目录
-- `modules/`：旧版图表/分析模块参考代码
-- `app.py`：旧版 Streamlit 入口，现主要作为历史版本参考
+### 启动
+
+在项目根目录准备 `.env` 后执行：
+
+```powershell
+docker compose up --build
+```
+
+默认服务职责：
+
+- `db`：PostgreSQL
+- `backend`：FastAPI 接口、Agent、PDF 报告生成
+- `frontend`：Nginx 托管前端页面并反向代理后端接口
+
+### Docker 图表导出说明
+
+后端容器内已经补充以下能力：
+
+- 安装 `google-chrome-stable`，解决 `Kaleido requires Google Chrome to be installed`
+- 安装 `fonts-noto-cjk`，为 Plotly 导出的 PNG 图表提供可用中文字体
+- 安装 `fontconfig` 并执行 `fc-cache -f -v`，确保容器内字体缓存可被 Chrome/Kaleido 正确识别
+- 设置 `CHROME_BIN` 与 `BROWSER_PATH`，降低 Kaleido 在容器里找不到浏览器的概率
 
 ## 环境变量
 
-建议使用 `.env`：
+建议使用项目根目录 `.env`：
 
 ```env
 DEEPSEEK_API_KEY=your_key
-DATABASE_URL=postgresql+psycopg://user:password@127.0.0.1:5432/stock_car
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=stock_car
+DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/stock_car
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 说明：
 
 - 后端优先读取 `DEEPSEEK_API_KEY`
-- `.streamlit/secrets.toml` 目前只保留兼容兜底，不再是推荐配置方式
+- `docker-compose.yml` 中的 `DATABASE_URL` 指向容器内 `db` 服务
+- 前端本地开发可单独改写 `VITE_API_BASE_URL`
 
-## 启动方式
+## 目录结构
 
-后端：
-
-```powershell
-.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
-```
-
-前端：
-
-```powershell
-cd web
-npm install
-npm run dev
+```text
+stock_car/
+├─ backend/                # FastAPI 后端
+├─ web/                    # React 前端
+├─ frontend/               # Nginx 配置与旧前端容器资源
+├─ modules/                # 旧版 Streamlit 模块与参考实现
+├─ storage/reports/        # PDF 报告缓存目录
+├─ docker-compose.yml      # 多服务编排
+├─ README.md
+└─ app.py                  # 旧版 Streamlit 入口
 ```
 
 ## PDF 缓存策略
 
-- 文件落盘目录：`storage/reports/`
+- 报告文件落盘到 `storage/reports/`
 - 文件名格式：`report_{stock_code}_{date_hash}.pdf`
 - 数据库索引表：`ai_reports`
-- 同一股票 + 同一区间 + 当天已生成：直接命中缓存
-- 同一参数跨天：覆盖同名文件并更新索引时间
-- 日期区间变化：生成新文件
-- 应用启动时自动清理 7 天前的 PDF 文件与失效索引
+- 同一股票、同一区间、同一天内重复请求优先命中缓存
+- 应用启动时自动清理超过 7 天的历史 PDF 与失效索引
 
-## 说明
+## 已知说明
 
-- 真实缓存命中逻辑在后端，不依赖前端内存状态
-- PDF 下载前必须先生成当前股票的分析数据
-- 图表已拆分为懒加载 chunk，但 Plotly 体积仍然较大
+- PDF 中正文使用 `ReportLab` 的中文字体，图表文字使用 `Plotly + Chrome + Noto CJK`
+- 当前仓库仍保留部分 `Streamlit` 时代代码，主要作为历史兼容或参考实现
+- 若 Docker 首次构建较慢，通常是 Chrome 与 Python 依赖安装耗时导致

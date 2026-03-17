@@ -1,5 +1,7 @@
 from __future__ import annotations
-
+import os
+os.environ['NO_PROXY'] = '*'
+os.environ['CURL_CA_BUNDLE'] = ''
 import json
 from typing import Iterator
 

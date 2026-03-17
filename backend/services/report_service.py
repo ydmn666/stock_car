@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from backend.utils.network_env import disable_proxy_env
+disable_proxy_env()
 import hashlib
 import re
 from datetime import date, datetime, timedelta
 from html import escape
 from io import BytesIO
 from pathlib import Path
-
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -25,12 +26,17 @@ from backend.models import AIReport
 from backend.services.forecast_service import generate_forecast
 from backend.services.market_service import get_stock_data, get_stock_name, get_stock_news, init_db
 
+PLOTLY_EXPORT_FONT_FAMILY = "Arial, Liberation Sans, DejaVu Sans, sans-serif"
+PLOTLY_BASE_FONT_SIZE = 12
 
 pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
+pio.templates["my_chinese"] = pio.templates["plotly_white"]
+pio.templates["my_chinese"].layout.font.family = PLOTLY_EXPORT_FONT_FAMILY
+pio.templates["my_chinese"].layout.font.size = PLOTLY_BASE_FONT_SIZE
+pio.templates.default = "my_chinese"
 
 REPORTS_DIR = ROOT_DIR / "storage" / "reports"
 PDF_RETENTION_DAYS = 7
-
 
 def _build_styles():
     styles = getSampleStyleSheet()
@@ -116,6 +122,76 @@ def _report_path(symbol: str, date_range: str) -> Path:
     return REPORTS_DIR / _report_basename(symbol, date_range)
 
 
+def _apply_plotly_export_layout(fig: go.Figure) -> go.Figure:
+    fig.update_layout(
+        template="my_chinese",
+        font=dict(
+            family=PLOTLY_EXPORT_FONT_FAMILY,
+            size=PLOTLY_BASE_FONT_SIZE,
+            color="#1F2937",
+        ),
+        title=dict(font=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=18, color="#111827")),
+        legend=dict(font=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=11, color="#374151")),
+        hoverlabel=dict(font=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=11)),
+        xaxis=dict(
+            title_font=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=12),
+            tickfont=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=11),
+        ),
+        yaxis=dict(
+            title_font=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=12),
+            tickfont=dict(family=PLOTLY_EXPORT_FONT_FAMILY, size=11),
+        ),
+    )
+    fig.update_annotations(font=dict(family=PLOTLY_EXPORT_FONT_FAMILY))
+    return fig
+
+
+def _ascii_only(value: str | None) -> str:
+    if not value:
+        return ""
+    return "".join(ch for ch in str(value) if ord(ch) < 128).strip()
+
+
+def _contains_non_ascii(value: str | None) -> bool:
+    return any(ord(ch) >= 128 for ch in str(value or ""))
+
+
+def _sanitize_plotly_text_for_pdf(fig: go.Figure) -> go.Figure:
+    title_text = ""
+    if fig.layout.title and fig.layout.title.text:
+        raw_title = str(fig.layout.title.text)
+        title_text = "" if _contains_non_ascii(raw_title) else _ascii_only(raw_title)
+    fig.update_layout(title=title_text)
+
+    fallback_names = {
+        "candlestick": "Price",
+        "scatter": "Series",
+        "bar": "Bar",
+    }
+    scatter_names = ["Actual", "Fit", "Band", "Forecast", "Series"]
+    scatter_index = 0
+
+    for trace in fig.data:
+        name = _ascii_only(getattr(trace, "name", ""))
+        if name:
+            trace.name = name
+            continue
+
+        trace_type = getattr(trace, "type", "")
+        if trace_type == "candlestick":
+            trace.name = "Price"
+            continue
+
+        if trace_type == "scatter":
+            trace.name = scatter_names[min(scatter_index, len(scatter_names) - 1)]
+            scatter_index += 1
+            continue
+
+        trace.name = fallback_names.get(trace_type, "Trace")
+
+    return fig
+
+
 def _build_kline_figure(df: pd.DataFrame) -> go.Figure:
     chart_df = df.sort_values("日期").reset_index(drop=True).copy()
     chart_df["MA5"] = chart_df["收盘"].rolling(window=5).mean()
@@ -154,13 +230,12 @@ def _build_kline_figure(df: pd.DataFrame) -> go.Figure:
     )
     fig.update_layout(
         title="股价走势（K线 + 均线）",
-        template="plotly_white",
         height=360,
         margin=dict(l=30, r=30, t=50, b=30),
         legend=dict(orientation="h", y=1.02, x=0.75),
         xaxis=dict(rangeslider_visible=False),
     )
-    return fig
+    return _apply_plotly_export_layout(fig)
 
 
 def _build_return_figure(df: pd.DataFrame) -> go.Figure:
@@ -183,13 +258,12 @@ def _build_return_figure(df: pd.DataFrame) -> go.Figure:
     fig.add_hline(y=0, line_dash="dash", line_color="gray")
     fig.update_layout(
         title=f"区间累计收益率（基准价 {base:.2f}）",
-        template="plotly_white",
         height=300,
         margin=dict(l=30, r=30, t=50, b=30),
         xaxis=dict(rangeslider_visible=False),
         yaxis=dict(ticksuffix="%"),
     )
-    return fig
+    return _apply_plotly_export_layout(fig)
 
 
 def _build_forecast_figure(forecast_df: pd.DataFrame | None, stock_df: pd.DataFrame) -> go.Figure | None:
@@ -253,16 +327,23 @@ def _build_forecast_figure(forecast_df: pd.DataFrame | None, stock_df: pd.DataFr
     )
     fig.update_layout(
         title="未来 7 天趋势预测",
-        template="plotly_white",
         height=320,
         margin=dict(l=30, r=30, t=50, b=30),
         xaxis=dict(rangeslider_visible=False),
     )
-    return fig
+    return _apply_plotly_export_layout(fig)
 
 
 def _figure_to_image(fig: go.Figure, width: int, height: int) -> BytesIO:
-    buffer = BytesIO(pio.to_image(fig, format="png", width=width, height=height, engine="kaleido"))
+    fig = _sanitize_plotly_text_for_pdf(fig)
+    image_bytes = pio.to_image(
+        _apply_plotly_export_layout(fig),
+        format="png",
+        width=width,
+        height=height,
+        scale=2,
+    )
+    buffer = BytesIO(image_bytes)
     buffer.seek(0)
     return buffer
 
@@ -288,7 +369,10 @@ def _append_chart_or_fallback(
                 height=(height / width) * 17.2 * cm,
             )
         )
-    except Exception:
+    except Exception as e:
+        import traceback
+        print("图表导出失败:", e)
+        traceback.print_exc()
         story.append(Paragraph(fallback_text, styles["CNBody"]))
     story.append(Spacer(1, 0.35 * cm))
 
@@ -329,6 +413,7 @@ def _build_summary_table(stock_df: pd.DataFrame) -> Table:
     return table
 
 
+#生成pdf报表
 def _build_report_pdf(
     symbol: str,
     resolved_name: str,

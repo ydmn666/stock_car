@@ -1,10 +1,32 @@
+# Python
 __pycache__/
-*.db
-.idea/
-.venv/
 *.pyc
-.streamlit/
+.venv/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Database / local cache
+*.db
+
+# Streamlit old config
+.streamlit/secrets.toml
+
+# Root env
 .env
+
+# Frontend env
 web/.env
+web/.env.production
+
+# Frontend dependencies / build
 web/node_modules/
 web/dist/
+
+# Optional if you later switch to frontend/web structure
+frontend/web/.env
+frontend/web/.env.production
+frontend/web/node_modules/
+frontend/web/dist/
