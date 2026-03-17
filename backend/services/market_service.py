@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import hashlib
 from datetime import date, timedelta
-
 import akshare as ak
 import pandas as pd
 from sqlalchemy import func, select
+from backend.utils.network_env import disable_proxy_env
+disable_proxy_env()
+
 
 from backend.db import SessionLocal, engine
 from backend.models import Base, StockHistory
@@ -23,20 +25,27 @@ def get_stock_data(symbol: str, start_date: date, end_date: date) -> pd.DataFram
     init_db()
     db_min, db_max = _get_db_range(symbol)
 
-    if db_min is None or db_max is None:
-        fetched = _fetch_from_akshare(symbol, start_date, end_date)
-        _save_to_db(fetched, symbol)
+    try:
+        if db_min is None or db_max is None:
+            fetched = _fetch_from_akshare(symbol, start_date, end_date)
+            _save_to_db(fetched, symbol)
+            return _load_from_db(symbol, start_date, end_date)
+
+        if start_date < db_min:
+            fetched = _fetch_from_akshare(symbol, start_date, db_min - timedelta(days=1))
+            _save_to_db(fetched, symbol)
+
+        if end_date > db_max:
+            fetched = _fetch_from_akshare(symbol, db_max + timedelta(days=1), end_date)
+            _save_to_db(fetched, symbol)
+
         return _load_from_db(symbol, start_date, end_date)
 
-    if start_date < db_min:
-        fetched = _fetch_from_akshare(symbol, start_date, db_min - timedelta(days=1))
-        _save_to_db(fetched, symbol)
-
-    if end_date > db_max:
-        fetched = _fetch_from_akshare(symbol, db_max + timedelta(days=1), end_date)
-        _save_to_db(fetched, symbol)
-
-    return _load_from_db(symbol, start_date, end_date)
+    except Exception:
+        cached = _load_from_db(symbol, start_date, end_date)
+        if not cached.empty:
+            return cached
+        raise
 
 
 def get_stock_name(symbol: str) -> str:
@@ -85,23 +94,45 @@ def _get_db_range(symbol: str) -> tuple[date | None, date | None]:
         return result[0], result[1]
 
 
+from time import sleep
+import random
+import requests
+
+
 def _fetch_from_akshare(symbol: str, start_date: date, end_date: date) -> pd.DataFrame:
     if start_date > end_date:
         return pd.DataFrame()
 
-    df = ak.stock_zh_a_hist(
-        symbol=symbol,
-        period="daily",
-        start_date=start_date.strftime("%Y%m%d"),
-        end_date=end_date.strftime("%Y%m%d"),
-        adjust="qfq",
-    )
-    if df.empty:
-        return df
+    last_error = None
 
-    payload = df.copy()
-    payload["日期"] = pd.to_datetime(payload["日期"])
-    return payload
+    for attempt in range(3):
+        try:
+            df = ak.stock_zh_a_hist(
+                symbol=symbol,
+                period="daily",
+                start_date=start_date.strftime("%Y%m%d"),
+                end_date=end_date.strftime("%Y%m%d"),
+                adjust="qfq",
+            )
+
+            if df is None or df.empty:
+                return pd.DataFrame()
+
+            payload = df.copy()
+            payload["日期"] = pd.to_datetime(payload["日期"])
+            return payload
+
+        except requests.exceptions.RequestException as e:
+            last_error = e
+        except Exception as e:
+            last_error = e
+
+        sleep(1.5 + random.random() * 2)
+
+    raise RuntimeError(
+        f"AkShare 拉取股票数据失败，symbol={symbol}, "
+        f"start={start_date}, end={end_date}, error={last_error}"
+    )
 
 
 def _save_to_db(df: pd.DataFrame, symbol: str) -> None:

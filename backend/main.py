@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.utils.network_env import disable_proxy_env
+disable_proxy_env()
 from datetime import datetime
 import traceback
 
@@ -34,18 +36,22 @@ from backend.services.market_service import get_stock_data, get_stock_name, get_
 from backend.services.report_service import cleanup_expired_reports, get_or_create_stock_report
 
 
-app = FastAPI(title="stock_car v2 backend")
+app = FastAPI()
 
+# 1. 替换这一段 CORS 配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],      # 允许所有 cpolar 随机域名访问
+    allow_credentials=False,  # 核心！公网跨域配置为 False，解决 Failed to fetch 报错
+    allow_methods=["*"],      # 允许所有请求方法 (GET, POST, OPTIONS 等)
+    allow_headers=["*"],      # 允许所有请求头
 )
+
+# 2. 顺手加一个“正门”，放在 @app.on_event("startup") 下方即可
+# 这个是为了防止你直接访问链接时看到恼人的 {"detail":"Not Found"}
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "后端引擎已全面启动！"}
 
 
 @app.on_event("startup")
@@ -74,7 +80,11 @@ def stock_data(payload: StockDataRequest):
         )
         return {"records": dataframe_to_records(df)}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=502,
+            detail=f"股票数据源访问失败，请稍后重试: {exc}"
+        ) from exc
 
 
 @app.post("/stocks/news")

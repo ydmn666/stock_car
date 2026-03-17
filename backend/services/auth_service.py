@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.utils.network_env import disable_proxy_env
+disable_proxy_env()
 from datetime import datetime
 
 from sqlalchemy import delete, select
