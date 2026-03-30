@@ -28,7 +28,7 @@ services:
       - db
 
   frontend:
-    build: ./web
+    build: ./frontend
     restart: always
     ports:
       - "80:80"
