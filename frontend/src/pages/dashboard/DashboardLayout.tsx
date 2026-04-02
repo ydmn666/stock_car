@@ -27,6 +27,8 @@ type DashboardLayoutProps = {
 };
 
 export function DashboardLayout(props: DashboardLayoutProps) {
+  const isAnalysisContext = !["portfolio", "history"].includes(props.activeTab);
+
   return (
     <div className="app-aurora h-screen overflow-hidden text-white">
       <div className="app-aurora__wave app-aurora__wave--left" />
@@ -46,9 +48,11 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           <div className="flex items-center gap-3">
             <span className="hidden rounded-full border border-white/8 px-3 py-2 text-xs text-slate-400 xl:inline-flex">{props.currentUser || "访客"} · {props.health === "ok" ? "系统在线" : "系统检测中"}</span>
             <AppButton variant="secondary" onClick={props.onBackToSetup}>重新配置</AppButton>
-            <AppButton variant="secondary" onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
-              {props.exportLoading ? "正在生成报告..." : "导出报告"}
-            </AppButton>
+            {isAnalysisContext ? (
+              <AppButton variant="secondary" onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
+                {props.exportLoading ? "正在生成报告..." : "导出报告"}
+              </AppButton>
+            ) : null}
             <AppButton variant="ghost" onClick={props.onLogout}>退出</AppButton>
           </div>
         </div>
@@ -70,22 +74,24 @@ export function DashboardLayout(props: DashboardLayoutProps) {
 
         <main className="min-w-0 min-h-0 overflow-y-auto overscroll-contain pr-1">
           <div className="space-y-4 pb-6">
-            <ContextHeader
-              activeStock={props.activeStock}
-              startDate={props.startDate}
-              endDate={props.endDate}
-              actions={
-                <>
-                  <AppButton variant="secondary" onClick={props.onBackToSetup}>切换股票</AppButton>
-                  <AppButton onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
-                    {props.exportLoading ? "正在生成报告..." : "生成当前报告"}
-                  </AppButton>
-                </>
-              }
-            />
-            {props.exportStatus ? <div className="rounded-2xl border border-[#165DFF]/20 bg-[#165DFF]/10 px-4 py-3 text-sm text-slate-100">{props.exportStatus}</div> : null}
+            {isAnalysisContext ? (
+              <ContextHeader
+                activeStock={props.activeStock}
+                startDate={props.startDate}
+                endDate={props.endDate}
+                actions={
+                  <>
+                    <AppButton variant="secondary" onClick={props.onBackToSetup}>切换股票</AppButton>
+                    <AppButton onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
+                      {props.exportLoading ? "正在生成报告..." : "生成当前报告"}
+                    </AppButton>
+                  </>
+                }
+              />
+            ) : null}
+            {isAnalysisContext && props.exportStatus ? <div className="rounded-2xl border border-[#165DFF]/20 bg-[#165DFF]/10 px-4 py-3 text-sm text-slate-100">{props.exportStatus}</div> : null}
             {props.workspaceError ? <div className="rounded-2xl border border-[#F87272]/30 bg-[#F87272]/10 px-4 py-3 text-sm text-[#FFD6D6]">{props.workspaceError}</div> : null}
-            <MetricStrip items={props.metricItems} />
+            {isAnalysisContext ? <MetricStrip items={props.metricItems} /> : null}
             <section>{props.moduleContent}</section>
           </div>
         </main>
