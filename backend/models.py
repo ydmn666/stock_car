@@ -135,6 +135,7 @@ class InvestmentTransaction(Base):
     portfolio_id: Mapped[int] = mapped_column(Integer, ForeignKey("user_portfolios.id", ondelete="CASCADE"), nullable=False, index=True)
     username: Mapped[str] = mapped_column(String(50), ForeignKey("users.username", ondelete="CASCADE"), nullable=False, index=True)
     symbol: Mapped[str] = mapped_column(String(20), ForeignKey("stock_instruments.symbol", ondelete="CASCADE"), nullable=False, index=True)
+    stock_name: Mapped[str] = mapped_column(String(100), nullable=False)
     trade_type: Mapped[str] = mapped_column(String(16), nullable=False)
     trade_date: Mapped[dt.date] = mapped_column(Date, nullable=False, index=True)
     quantity: Mapped[float] = mapped_column(Float, nullable=False)

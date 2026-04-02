@@ -20,6 +20,8 @@ SYSTEM_PROMPT = """你是新能源车股票分析系统里的智能投研助手�
 2. 当用户问题需要客观数据时，优先调用工具，不要凭空编造。
 3. 当用户只问概念时，可以直接简洁回答。
 4. 如果用户没有提供股票代码，而你又无法可靠判断，请先提醒用户补充代码。
+5. 当用户询问“我的投资、我的持仓、我的收益、我的交易记录、我的仓位”这类个人投资问题时，
+   如果上下文里存在 current_user，请优先调用 get_user_portfolio_summary 工具并使用该用户名。
 5. 输出尽量简洁、实用，优先给结论，再补充依据。
 
 限制：
@@ -42,9 +44,12 @@ def _build_context_prompt(context: dict | None) -> str:
     if not context:
         return "\n当前页面上下文：暂无可用页面上下文。"
 
+    current_user = context.get("current_user") or "未知"
     if not context.get("analysis_ready"):
         return (
-            "\n当前页面上下文：用户尚未点击“生成分析报告”，因此当前没有真正选中的股票。"
+            "\n当前页面上下文："
+            f"当前登录用户是 {current_user}；"
+            "用户尚未点击“生成分析报告”，因此当前没有真正选中的股票。"
             "此时你可以回答一般性股票问题，但不能把左侧勾选列表视为当前选中股票。"
         )
 
@@ -55,6 +60,7 @@ def _build_context_prompt(context: dict | None) -> str:
     pdf_ready = "是" if context.get("pdf_ready_for_current_stock") else "否"
     return (
         "\n当前页面上下文："
+        f"当前登录用户是 {current_user}；"
         f"已经生成分析报告；当前真正选中的股票是 {stock_name}({stock_code})；"
         f"当前分析区间为 {start_date} 到 {end_date}；"
         f"当前股票的 PDF 是否已就绪：{pdf_ready}。"
@@ -140,6 +146,7 @@ def _build_agent(context: dict | None = None):
     system_prompt = (
         SYSTEM_PROMPT
         + _build_context_prompt(context)
+        + "\n如果用户提问属于个人投资模块，而上下文里存在 current_user，你应优先使用 get_user_portfolio_summary(username=current_user) 获取真实持仓、收益和交易信息。"
         + "\n当用户明确要求生成、导出、下载当前股票 PDF 报告时，你必须优先调用 request_current_stock_pdf_report 工具。"
         + "如果工具返回 ACTION::PDF:: 开头的结果，请在最终回答中简洁说明报告已准备好。"
         + "如果工具返回 ERROR:: 开头的结果，请直接向用户解释原因，不要伪造成功。"

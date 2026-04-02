@@ -4,6 +4,10 @@ import type {
   HistoryItem,
   Instrument,
   NewsResponse,
+  PortfolioPerformanceResponse,
+  PortfolioPosition,
+  PortfolioSummary,
+  PortfolioTransaction,
   PriceBar,
   PriceHistoryResponse,
 } from "../types";
@@ -210,6 +214,66 @@ export async function deleteHistoryItem(itemId: number) {
 
 export async function deleteAllUserHistory(username: string) {
   return request<{ success: boolean }>(`/users/${username}/history`, {
+    method: "DELETE",
+  });
+}
+
+export async function getPortfolioSummary(username: string) {
+  return request<PortfolioSummary>(`/portfolio/${username}/summary`);
+}
+
+export async function getPortfolioPositions(username: string) {
+  const payload = await request<{ items: PortfolioPosition[] }>(`/portfolio/${username}/positions`);
+  return payload.items;
+}
+
+export async function getPortfolioPerformance(username: string) {
+  return request<PortfolioPerformanceResponse>(`/portfolio/${username}/performance`);
+}
+
+export async function getPortfolioTransactions(username: string) {
+  const payload = await request<{ items: PortfolioTransaction[] }>(`/portfolio/${username}/transactions`);
+  return payload.items;
+}
+
+export async function createPortfolioTransaction(input: {
+  username: string;
+  symbol: string;
+  trade_type: "buy" | "sell";
+  trade_date: string;
+  price: number;
+  quantity: number;
+  fee?: number;
+  note?: string;
+}) {
+  return request<PortfolioTransaction>("/portfolio/transactions", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updatePortfolioTransaction(
+  username: string,
+  transactionId: number,
+  input: {
+    username: string;
+    symbol: string;
+    trade_type: "buy" | "sell";
+    trade_date: string;
+    price: number;
+    quantity: number;
+    fee?: number;
+    note?: string;
+  },
+) {
+  return request<PortfolioTransaction>(`/portfolio/${username}/transactions/${transactionId}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deletePortfolioTransaction(username: string, transactionId: number) {
+  return request<{ success: boolean }>(`/portfolio/${username}/transactions/${transactionId}`, {
     method: "DELETE",
   });
 }

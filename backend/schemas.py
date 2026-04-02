@@ -70,3 +70,25 @@ class ReportRequest(BaseModel):
     stock_name: str | None = None
     start_date: str
     end_date: str
+
+
+class CreateTransactionRequest(BaseModel):
+    username: str
+    symbol: str
+    trade_type: Literal["buy", "sell"]
+    trade_date: str
+    price: float
+    quantity: float
+    fee: float = 0
+    note: str | None = None
+
+
+class UpdateTransactionRequest(BaseModel):
+    username: str
+    symbol: str
+    trade_type: Literal["buy", "sell"]
+    trade_date: str
+    price: float
+    quantity: float
+    fee: float = 0
+    note: str | None = None

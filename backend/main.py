@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from backend.schemas import (
     AgentRequest,
     ChatRequest,
+    CreateTransactionRequest,
     ForecastRequest,
     LogHistoryRequest,
     LoginRequest,
@@ -20,6 +21,7 @@ from backend.schemas import (
     ReportRequest,
     StockDataRequest,
     StockNewsRequest,
+    UpdateTransactionRequest,
 )
 from backend.agents.stock_agent import run_agent_with_actions, stream_agent
 from backend.serialization import dataframe_to_records, records_to_dataframe
@@ -34,6 +36,15 @@ from backend.services.auth_service import (
 )
 from backend.services.forecast_service import generate_forecast
 from backend.services.market_service import get_instrument_payload, get_news_payload, get_price_history_payload, get_stock_name, init_db
+from backend.services.portfolio_service import (
+    create_transaction,
+    delete_transaction,
+    get_portfolio_performance,
+    get_portfolio_summary,
+    get_positions,
+    list_transactions,
+    update_transaction,
+)
 from backend.services.report_service import cleanup_expired_reports, get_or_create_stock_report
 
 
@@ -152,6 +163,84 @@ def forecast(payload: ForecastRequest):
         return {"records": dataframe_to_records(forecast_df)}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/portfolio/{username}/summary")
+def portfolio_summary(username: str):
+    try:
+        return get_portfolio_summary(username)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/portfolio/{username}/positions")
+def portfolio_positions(username: str):
+    try:
+        return {"items": get_positions(username)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/portfolio/{username}/performance")
+def portfolio_performance(username: str):
+    try:
+        return get_portfolio_performance(username)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/portfolio/{username}/transactions")
+def portfolio_transactions(username: str):
+    try:
+        return {"items": list_transactions(username)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/portfolio/transactions")
+def portfolio_transaction_create(payload: CreateTransactionRequest):
+    try:
+        return create_transaction(
+            username=payload.username,
+            symbol=payload.symbol,
+            trade_type=payload.trade_type,
+            trade_date=datetime.strptime(payload.trade_date, "%Y-%m-%d").date(),
+            price=payload.price,
+            quantity=payload.quantity,
+            fee=payload.fee,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/portfolio/{username}/transactions/{transaction_id}")
+def portfolio_transaction_delete(username: str, transaction_id: int):
+    try:
+        delete_transaction(username, transaction_id)
+        return {"success": True}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.put("/portfolio/{username}/transactions/{transaction_id}")
+def portfolio_transaction_update(username: str, transaction_id: int, payload: UpdateTransactionRequest):
+    if payload.username != username:
+        raise HTTPException(status_code=400, detail="请求用户与路径用户不一致。")
+    try:
+        return update_transaction(
+            username=payload.username,
+            transaction_id=transaction_id,
+            symbol=payload.symbol,
+            trade_type=payload.trade_type,
+            trade_date=datetime.strptime(payload.trade_date, "%Y-%m-%d").date(),
+            price=payload.price,
+            quantity=payload.quantity,
+            fee=payload.fee,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/ai/chat/stream")

@@ -8,7 +8,7 @@ from typing import Literal
 import akshare as ak
 import pandas as pd
 import requests
-from sqlalchemy import func, select
+from sqlalchemy import func, inspect, select, text
 
 from backend.db import SessionLocal, engine
 from backend.models import Base, StockHistory
@@ -23,6 +23,12 @@ except ImportError:  # pragma: no cover - optional dependency
 
 Market = Literal["CN"]
 AssetType = Literal["stock"]
+
+LOCAL_CN_STOCK_NAMES = {
+    "002594": "比亚迪",
+    "300750": "宁德时代",
+    "000625": "长安汽车",
+}
 
 
 @dataclass(slots=True)
@@ -111,6 +117,7 @@ class MarketProvider:
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _ensure_runtime_schema()
 
 
 def hash_password(password: str) -> str:
@@ -376,7 +383,7 @@ def _fetch_cn_stock_name(symbol: str) -> str:
             return str(name_row["value"].values[0])
     except Exception:
         pass
-    return symbol
+    return LOCAL_CN_STOCK_NAMES.get(symbol, symbol)
 
 
 def _clean_text(value: object) -> str:
@@ -688,6 +695,21 @@ def _safe_float(value: object) -> float | None:
     if value is None or pd.isna(value):
         return None
     return float(value)
+
+
+def _ensure_runtime_schema() -> None:
+    inspector = inspect(engine)
+
+    if inspector.has_table("investment_transactions"):
+        columns = {column["name"] for column in inspector.get_columns("investment_transactions")}
+        statements: list[str] = []
+        if "stock_name" not in columns:
+            statements.append("ALTER TABLE investment_transactions ADD COLUMN stock_name VARCHAR(100)")
+
+        if statements:
+            with engine.begin() as connection:
+                for statement in statements:
+                    connection.execute(text(statement))
 
 
 

@@ -16,5 +16,6 @@ uvicorn
 langchain
 langchain-openai
 sqlalchemy
+alembic
 psycopg[binary]
 python-dotenv

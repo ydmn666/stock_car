@@ -99,5 +99,79 @@ export interface HistoryItem {
   visit_time_str: string;
 }
 
+export interface PortfolioSummary {
+  total_buy_amount: number;
+  total_sell_amount: number;
+  total_fees: number;
+  net_invested: number;
+  cash_returned: number;
+  realized_pnl: number;
+  holding_cost: number;
+  market_value: number;
+  unrealized_pnl: number;
+  unrealized_pnl_pct: number | null;
+  position_count: number;
+  transaction_count: number;
+}
+
+export interface PortfolioPosition {
+  symbol: string;
+  stock_name: string;
+  quantity: number;
+  avg_cost: number;
+  cost_basis: number;
+  latest_price: number | null;
+  market_value: number | null;
+  unrealized_pnl: number | null;
+  unrealized_pnl_pct: number | null;
+}
+
+export interface PortfolioTransaction {
+  id: number;
+  username: string;
+  symbol: string;
+  stock_name: string;
+  trade_type: "buy" | "sell";
+  trade_date: string;
+  price: number;
+  quantity: number;
+  fee: number;
+  amount: number;
+  note?: string | null;
+}
+
+export interface PortfolioPerformancePoint {
+  date: string;
+  net_invested: number;
+  cash_returned: number;
+  holding_cost: number;
+  market_value: number;
+  realized_pnl: number;
+  unrealized_pnl: number;
+  unrealized_pnl_pct: number | null;
+}
+
+export interface PortfolioAllocationItem {
+  symbol: string;
+  stock_name: string;
+  market_value: number | null;
+  weight_pct: number | null;
+  unrealized_pnl: number | null;
+}
+
+export interface PortfolioPerformanceResponse {
+  curve: PortfolioPerformancePoint[];
+  allocation: PortfolioAllocationItem[];
+  stats: {
+    latest_market_value: number;
+    latest_cash_returned: number;
+    latest_realized_pnl: number;
+    latest_unrealized_pnl: number;
+    latest_unrealized_pnl_pct: number | null;
+    max_market_value: number;
+    min_market_value: number;
+  };
+}
+
 export type StockOption = Instrument;
 export type StockRecord = PriceBar;

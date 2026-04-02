@@ -310,7 +310,7 @@ export default function App() {
       case "forecast":
         return <ForecastPage ready={analysisReady} history={activeRecords} forecast={activeForecast} />;
       case "portfolio":
-        return <PortfolioPage />;
+        return <PortfolioPage currentUser={currentUser} />;
       case "history":
         return (
           <HistoryPage
