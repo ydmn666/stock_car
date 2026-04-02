@@ -25,7 +25,7 @@
 
 ### v4.1
 
-- 增加容器化交付能力，补齐 `backend/Dockerfile`、`web/Dockerfile` 与 `docker-compose.yml`
+- 增加容器化交付能力，补齐 `backend/Dockerfile`、`frontend/Dockerfile` 与 `docker-compose.yml`
 - 增加 `Nginx` 反向代理，减少前后端联调时的跨域与入口配置成本
 - 增加 `cpolar` 公网演示方案，方便在非局域网环境下访问系统
 - 加强 Docker 运行时图表导出能力，确保 `Plotly + Kaleido + ReportLab` 在 Linux 容器中稳定工作
@@ -43,7 +43,7 @@
 
 ## 当前架构
 
-- 前端：`web/`，基于 `React + TypeScript + Tailwind CSS + Plotly`
+- 前端：`frontend/`，基于 `React + TypeScript + Tailwind CSS + Plotly`
 - 后端：`backend/`，基于 `FastAPI`
 - 数据库：`PostgreSQL`
 - 大模型：`DeepSeek`
@@ -100,13 +100,10 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 ```text
 stock_car/
 ├─ backend/                # FastAPI 后端
-├─ web/                    # React 前端
-├─ frontend/               # Nginx 配置与旧前端容器资源
-├─ modules/                # 旧版 Streamlit 模块与参考实现
+├─ frontend/               # React 前端
 ├─ storage/reports/        # PDF 报告缓存目录
 ├─ docker-compose.yml      # 多服务编排
 ├─ README.md
-└─ app.py                  # 旧版 Streamlit 入口
 ```
 
 ## PDF 缓存策略
@@ -120,5 +117,5 @@ stock_car/
 ## 已知说明
 
 - PDF 中正文使用 `ReportLab` 的中文字体，图表文字使用 `Plotly + Chrome + Noto CJK`
-- 当前仓库仍保留部分 `Streamlit` 时代代码，主要作为历史兼容或参考实现
+- 当前仓库已收敛为 `React + FastAPI + PostgreSQL` 主线结构
 - 若 Docker 首次构建较慢，通常是 Chrome 与 Python 依赖安装耗时导致

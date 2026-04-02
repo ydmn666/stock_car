@@ -10,10 +10,12 @@ bcrypt
 numpy
 openai
 requests
+baostock
 fastapi
 uvicorn
 langchain
 langchain-openai
 sqlalchemy
+alembic
 psycopg[binary]
 python-dotenv

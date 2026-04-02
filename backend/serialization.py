@@ -1,9 +1,14 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 
 
-DATETIME_COLUMNS = ("日期", "发布时间", "发布时间时间", "ds")
+DATETIME_COLUMNS = (
+    "date",
+    "published_at",
+    "trade_date",
+    "ds",
+)
 
 
 def dataframe_to_records(df: pd.DataFrame | None) -> list[dict]:
