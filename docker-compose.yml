@@ -12,6 +12,9 @@ services:
   backend:
     build: ./backend
     restart: always
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       DATABASE_URL: ${DATABASE_URL}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
@@ -26,14 +29,24 @@ services:
       CURL_CA_BUNDLE: ""
     depends_on:
       - db
+    volumes:
+      - ./backend:/app/backend
+      - ./storage:/app/storage
 
   frontend:
-    build: ./frontend
+    image: node:18-alpine
     restart: always
+    working_dir: /app
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
     ports:
-      - "80:80"
+      - "80:5173"
     depends_on:
       - backend
+    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   postgres_data:

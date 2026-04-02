@@ -1,23 +1,12 @@
-﻿import { KLineChart, ReturnChart } from "../../components/charts";
+import { KLineChart, MacdChart, ReturnChart, RsiChart } from "../../components/charts";
 import { ChartCarousel } from "../../components/dashboard/ChartCarousel";
 import { EmptyStatePanel } from "../../components/dashboard/EmptyStatePanel";
-import type { StockRecord } from "../../types";
+import type { PriceBar } from "../../types";
 
 type TechnicalAnalysisPageProps = {
   ready: boolean;
-  activeRecords: StockRecord[];
+  activeRecords: PriceBar[];
 };
-
-function PlaceholderChart({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex h-[520px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[#101010] p-6 text-center">
-      <div className="max-w-xl">
-        <h4 className="text-2xl font-semibold text-white">{title}</h4>
-        <p className="mt-4 text-sm leading-7 text-slate-300">{description}</p>
-      </div>
-    </div>
-  );
-}
 
 export function TechnicalAnalysisPage({ ready, activeRecords }: TechnicalAnalysisPageProps) {
   if (!ready) {
@@ -41,14 +30,14 @@ export function TechnicalAnalysisPage({ ready, activeRecords }: TechnicalAnalysi
         {
           key: "macd",
           label: "MACD",
-          summary: "这里先预留 MACD 视图位，后续接真实指标计算即可直接替换。",
-          content: <PlaceholderChart title="MACD 指标区域" description="后续接入真实技术指标后，这里将显示 MACD 柱体、DIF 与 DEA 曲线。" />,
+          summary: "通过 DIF、DEA 和红绿柱观察趋势强弱变化与潜在拐点。",
+          content: <MacdChart records={activeRecords} />,
         },
         {
           key: "rsi",
           label: "RSI",
-          summary: "这里先预留 RSI 视图位，用于后续接入技术指标计算结果。",
-          content: <PlaceholderChart title="RSI 指标区域" description="后续会在这里展示 RSI 超买超卖区间，用于辅助判断短期热度。" />,
+          summary: "观察超买超卖区间，辅助判断短期热度和回落风险。",
+          content: <RsiChart records={activeRecords} />,
         },
       ]
     : [];

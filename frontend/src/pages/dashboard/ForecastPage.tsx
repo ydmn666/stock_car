@@ -1,12 +1,12 @@
 ﻿import { ForecastChart } from "../../components/charts";
 import { ChartCarousel } from "../../components/dashboard/ChartCarousel";
 import { EmptyStatePanel } from "../../components/dashboard/EmptyStatePanel";
-import type { StockRecord } from "../../types";
+import type { ForecastPoint, PriceBar } from "../../types";
 
 type ForecastPageProps = {
   ready: boolean;
-  history: StockRecord[];
-  forecast: StockRecord[];
+  history: PriceBar[];
+  forecast: ForecastPoint[];
 };
 
 function PlaceholderPanel({ title, description }: { title: string; description: string }) {

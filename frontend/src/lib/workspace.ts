@@ -1,4 +1,4 @@
-﻿import type { StockOption, StockRecord } from "../types";
+﻿import type { Instrument, NewsItem, PriceBar } from "../types";
 
 export type WorkspaceTab =
   | "overview"
@@ -13,14 +13,12 @@ export type AgentMessage = { role: "user" | "assistant"; content: string };
 
 export type PdfCacheItem = { filename: string; blob: Blob };
 
-export type SetupMarket = "all" | "cn" | "us" | "hk";
+export type SetupMarket = "cn";
 
-export const HOT_STOCKS: StockOption[] = [
-  { name: "比亚迪", code: "002594" },
-  { name: "宁德时代", code: "300750" },
-  { name: "长安汽车", code: "000625" },
-  { name: "特斯拉", code: "TSLA" },
-  { name: "蔚来", code: "NIO" },
+export const HOT_STOCKS: Instrument[] = [
+  { id: "CN:002594", market: "CN", symbol: "002594", full_symbol: "002594.SZ", asset_type: "stock", display_name: "比亚迪", exchange: "SZSE", currency: "CNY" },
+  { id: "CN:300750", market: "CN", symbol: "300750", full_symbol: "300750.SZ", asset_type: "stock", display_name: "宁德时代", exchange: "SZSE", currency: "CNY" },
+  { id: "CN:000625", market: "CN", symbol: "000625", full_symbol: "000625.SZ", asset_type: "stock", display_name: "长安汽车", exchange: "SZSE", currency: "CNY" },
 ];
 
 export const WORKSPACE_TABS: Array<{ key: WorkspaceTab; label: string; short: string }> = [
@@ -33,17 +31,6 @@ export const WORKSPACE_TABS: Array<{ key: WorkspaceTab; label: string; short: st
   { key: "history", label: "历史记录", short: "史" },
 ];
 
-export const FIELD_MAP = {
-  close: ["收盘", "鏀剁洏", "close", "Close"],
-  open: ["开盘", "寮€鐩?", "open", "Open"],
-  high: ["最高", "鏈€楂?", "high", "High"],
-  low: ["最低", "鏈€浣?", "low", "Low"],
-  volume: ["成交量", "鎴愪氦閲?", "volume", "Volume"],
-  pct: ["涨跌幅", "娑ㄨ穼骞?", "pct_change"],
-  newsTime: ["发布时间", "鍙戝竷鏃堕棿", "date", "published_at"],
-  newsTitle: ["新闻标题", "鏂伴椈鏍囬", "标题", "鏍囬", "title"],
-};
-
 export function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -52,14 +39,6 @@ export function oneYearAgo() {
   const date = new Date();
   date.setFullYear(date.getFullYear() - 1);
   return date.toISOString().slice(0, 10);
-}
-
-export function pick(record: StockRecord | undefined, keys: string[]) {
-  if (!record) return null;
-  for (const key of keys) {
-    if (key in record) return record[key];
-  }
-  return null;
 }
 
 export function num(value: unknown) {
@@ -71,13 +50,13 @@ export function num(value: unknown) {
   return null;
 }
 
-export function str(value: unknown) {
-  return typeof value === "string" ? value : value == null ? "" : String(value);
-}
-
-export function money(value: number | null, prefix = "¥") {
+export function money(value: number | null, prefix = "￥") {
   if (value == null) return "--";
   return `${prefix}${value.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function pricePrefix(instrument: Instrument | null | undefined) {
+  return "￥";
 }
 
 export function percent(value: number | null, digits = 2) {
@@ -95,8 +74,8 @@ export function pdfIntent(text: string) {
   return lower.includes("pdf") || text.includes("报告") || text.includes("导出") || text.includes("下载");
 }
 
-export function scoreMetrics(records: StockRecord[]) {
-  const closes = records.map((item) => num(pick(item, FIELD_MAP.close))).filter((value): value is number => value != null);
+export function scoreMetrics(records: PriceBar[]) {
+  const closes = records.map((item) => item.close).filter((value): value is number => value != null);
   if (closes.length < 5) return { total: null, drawdown: null, volatility: null };
   const returns: number[] = [];
   for (let index = 1; index < closes.length; index += 1) {
@@ -117,20 +96,16 @@ export function scoreMetrics(records: StockRecord[]) {
   return { total, drawdown: drawdown * 100, volatility };
 }
 
-export function getNewsTitle(record: StockRecord) {
-  return str(pick(record, FIELD_MAP.newsTitle) ?? "暂无标题");
+export function getNewsTitle(record: NewsItem) {
+  return record.title || "暂无标题";
 }
 
-export function getNewsTime(record: StockRecord) {
-  return str(pick(record, FIELD_MAP.newsTime) ?? "--").slice(0, 19);
+export function getNewsTime(record: NewsItem) {
+  return record.published_at.slice(0, 19) || "--";
 }
 
-export function getNewsUrl(record: StockRecord) {
-  for (const key of ["新闻链接", "鏂伴椈閾炬帴", "链接", "閾炬帴", "url", "URL", "source_url", "网址"]) {
-    const value = record[key];
-    if (typeof value === "string" && value.startsWith("http")) return value;
-  }
-  return "";
+export function getNewsUrl(record: NewsItem) {
+  return record.url || "";
 }
 
 export function download(item: PdfCacheItem) {
@@ -144,25 +119,32 @@ export function download(item: PdfCacheItem) {
 
 export function buildContext(input: {
   currentUser: string;
-  activeStock: StockOption | null;
-  selectedStocks: StockOption[];
+  activeStock: Instrument | null;
+  selectedStocks: Instrument[];
   startDate: string;
   endDate: string;
   activeTab: WorkspaceTab;
-  records: Record<string, StockRecord[]>;
+  records: Record<string, PriceBar[]>;
   pdfCache: Record<string, PdfCacheItem>;
 }) {
-  const code = input.activeStock?.code ?? "";
-  const pdfKey = code ? `${code}:${input.startDate}:${input.endDate}` : "";
+  const instrumentId = input.activeStock?.id ?? "";
+  const pdfKey = instrumentId ? `${instrumentId}:${input.startDate}:${input.endDate}` : "";
   return {
     current_user: input.currentUser,
-    current_stock_name: input.activeStock?.name ?? "",
-    current_stock_code: code,
-    selected_stocks: input.selectedStocks,
+    current_stock_name: input.activeStock?.display_name ?? "",
+    current_stock_code: input.activeStock?.symbol ?? "",
+    current_market: input.activeStock?.market ?? "",
+    selected_stocks: input.selectedStocks.map((item) => ({
+      market: item.market,
+      symbol: item.symbol,
+      full_symbol: item.full_symbol,
+      display_name: item.display_name,
+    })),
     active_tab: input.activeTab,
-    analysis_ready: code ? (input.records[code] ?? []).length > 0 : false,
+    analysis_ready: instrumentId ? (input.records[instrumentId] ?? []).length > 0 : false,
     start_date: input.startDate,
     end_date: input.endDate,
     pdf_ready_for_current_stock: pdfKey ? Boolean(input.pdfCache[pdfKey]) : false,
   };
 }
+

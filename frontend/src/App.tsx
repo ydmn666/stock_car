@@ -1,17 +1,16 @@
 ﻿import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  deleteAllUserHistory,
   deleteHistoryItem,
   generatePdfReport,
   getForecast,
   getHealth,
-  getStockData,
-  getStockName,
+  getPriceHistory,
   getStockNews,
   getUserHistory,
   logHistory,
   login,
   register,
+  resolveInstrument,
 } from "./lib/api";
 import { ForecastPage } from "./pages/dashboard/ForecastPage";
 import { HistoryPage } from "./pages/dashboard/HistoryPage";
@@ -26,21 +25,19 @@ import { LoginPage } from "./pages/LoginPage";
 import { StockSetupPage } from "./pages/StockSetupPage";
 import {
   HOT_STOCKS,
-  FIELD_MAP,
   buildContext,
   download,
   money,
-  num,
   oneYearAgo,
   percent,
-  pick,
+  pricePrefix,
   scoreMetrics,
   today,
   type PdfCacheItem,
   type SetupMarket,
   type WorkspaceTab,
 } from "./lib/workspace";
-import type { HistoryItem, StockOption, StockRecord } from "./types";
+import type { ForecastPoint, HistoryItem, Instrument, NewsItem, PriceBar } from "./types";
 
 type Screen = "landing" | "auth" | "setup" | "workspace";
 type AuthMode = "login" | "register";
@@ -54,20 +51,22 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState("");
   const [health, setHealth] = useState("checking");
 
-  const [market, setMarket] = useState<SetupMarket>("all");
-  const [selectedStocks, setSelectedStocks] = useState<StockOption[]>(HOT_STOCKS.slice(0, 3));
+  const [market, setMarket] = useState<SetupMarket>("cn");
+  const [selectedStocks, setSelectedStocks] = useState<Instrument[]>(HOT_STOCKS.slice(0, 3));
   const [manualCode, setManualCode] = useState("");
   const [manualError, setManualError] = useState("");
-  const [activeCode, setActiveCode] = useState(HOT_STOCKS[0].code);
+  const [activeCode, setActiveCode] = useState(HOT_STOCKS[0].id);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
   const [startDate, setStartDate] = useState(oneYearAgo());
   const [endDate, setEndDate] = useState(today());
   const [loading, setLoading] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState("");
   const [workspaceError, setWorkspaceError] = useState("");
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
-  const [recordsByCode, setRecordsByCode] = useState<Record<string, StockRecord[]>>({});
-  const [forecastByCode, setForecastByCode] = useState<Record<string, StockRecord[]>>({});
-  const [newsByCode, setNewsByCode] = useState<Record<string, StockRecord[]>>({});
+  const [recordsByCode, setRecordsByCode] = useState<Record<string, PriceBar[]>>({});
+  const [forecastByCode, setForecastByCode] = useState<Record<string, ForecastPoint[]>>({});
+  const [newsByCode, setNewsByCode] = useState<Record<string, NewsItem[]>>({});
   const [newsFallbackByCode, setNewsFallbackByCode] = useState<Record<string, boolean>>({});
   const [pdfCache, setPdfCache] = useState<Record<string, PdfCacheItem>>({});
 
@@ -84,21 +83,18 @@ export default function App() {
   }, [currentUser]);
 
   const filteredHotStocks = useMemo(() => {
-    if (market === "all") return HOT_STOCKS;
-    if (market === "cn") return HOT_STOCKS.filter((item) => /^\d+$/.test(item.code));
-    if (market === "us") return HOT_STOCKS.filter((item) => /[A-Z]/.test(item.code));
-    return [];
+    return HOT_STOCKS;
   }, [market]);
 
-  const activeStock = selectedStocks.find((item) => item.code === activeCode) ?? null;
-  const activeRecords = activeStock ? recordsByCode[activeStock.code] ?? [] : [];
-  const activeForecast = activeStock ? forecastByCode[activeStock.code] ?? [] : [];
-  const activeNews = activeStock ? newsByCode[activeStock.code] ?? [] : [];
-  const activeNewsFallback = activeStock ? Boolean(newsFallbackByCode[activeStock.code]) : false;
+  const activeStock = selectedStocks.find((item) => item.id === activeCode) ?? null;
+  const activeRecords = activeStock ? recordsByCode[activeStock.id] ?? [] : [];
+  const activeForecast = activeStock ? forecastByCode[activeStock.id] ?? [] : [];
+  const activeNews = activeStock ? newsByCode[activeStock.id] ?? [] : [];
+  const activeNewsFallback = activeStock ? Boolean(newsFallbackByCode[activeStock.id]) : false;
   const latestRecord = activeRecords[activeRecords.length - 1];
   const metrics = scoreMetrics(activeRecords);
-  const comparisonSeries = selectedStocks.map((item) => ({ name: item.name, records: recordsByCode[item.code] ?? [] }));
-  const pdfKey = activeStock ? `${activeStock.code}:${startDate}:${endDate}` : "";
+  const comparisonSeries = selectedStocks.map((item) => ({ name: item.display_name, records: recordsByCode[item.id] ?? [] }));
+  const pdfKey = activeStock ? `${activeStock.id}:${startDate}:${endDate}` : "";
   const currentPdf = pdfKey ? pdfCache[pdfKey] : null;
   const analysisReady = Boolean(activeStock && activeRecords.length);
 
@@ -139,11 +135,11 @@ export default function App() {
     }
   }
 
-  function addPresetStock(stock: StockOption) {
+  function addPresetStock(stock: Instrument) {
     setManualError("");
-    const exists = selectedStocks.some((item) => item.code === stock.code);
+    const exists = selectedStocks.some((item) => item.id === stock.id);
     if (exists) {
-      setActiveCode(stock.code);
+      setActiveCode(stock.id);
       return;
     }
     if (selectedStocks.length >= 5) {
@@ -151,7 +147,7 @@ export default function App() {
       return;
     }
     setSelectedStocks((current) => [...current, stock]);
-    setActiveCode(stock.code);
+    setActiveCode(stock.id);
   }
 
   async function addManualStock() {
@@ -161,29 +157,30 @@ export default function App() {
       setManualError("请输入股票代码。");
       return;
     }
-    if (selectedStocks.some((item) => item.code === code)) {
-      setManualError("该股票已在列表中。");
-      return;
-    }
-    if (selectedStocks.length >= 5) {
-      setManualError("最多同时关注 5 只股票。");
-      return;
-    }
+    const marketHint = "CN";
     try {
-      const name = await getStockName(code);
-      setSelectedStocks((current) => [...current, { code, name: name || code }]);
-      setActiveCode(code);
+      const instrument = await resolveInstrument(code, marketHint);
+      if (selectedStocks.some((item) => item.id === instrument.id)) {
+        setManualError("该股票已在列表中。");
+        return;
+      }
+      if (selectedStocks.length >= 5) {
+        setManualError("最多同时关注 5 只股票。");
+        return;
+      }
+      setSelectedStocks((current) => [...current, instrument]);
+      setActiveCode(instrument.id);
       setManualCode("");
     } catch (error) {
-      setManualError(error instanceof Error ? error.message : "股票名称获取失败。");
+      setManualError(error instanceof Error ? error.message : "股票信息获取失败。");
     }
   }
 
   function removeStock(code: string) {
-    const next = selectedStocks.filter((item) => item.code !== code);
+    const next = selectedStocks.filter((item) => item.id !== code);
     setSelectedStocks(next);
     if (code === activeCode) {
-      setActiveCode(next[0]?.code ?? "");
+      setActiveCode(next[0]?.id ?? "");
     }
   }
 
@@ -197,32 +194,48 @@ export default function App() {
     try {
       const result = await Promise.all(
         selectedStocks.map(async (stock) => {
-          const records = await getStockData(stock.code, startDate, endDate);
+          const history = await getPriceHistory(stock, startDate, endDate);
+          const resolvedInstrument =
+            history.instrument.display_name === history.instrument.symbol
+              ? { ...history.instrument, display_name: stock.display_name }
+              : history.instrument;
           const [forecast, news] = await Promise.all([
-            getForecast(records, 7).catch(() => ({ records: [] as StockRecord[] })),
-            getStockNews(stock.code, stock.name, 8).catch(() => ({ records: [] as StockRecord[], is_fallback: false })),
+            getForecast(history.records, 7).catch(() => ({ records: [] as ForecastPoint[] })),
+            getStockNews(resolvedInstrument, 8).catch(() => ({ instrument: resolvedInstrument, records: [] as NewsItem[], meta: { provider: "", fallback_used: false } })),
           ]);
-          return { stock, records, forecast: forecast.records, news: news.records, fallback: news.is_fallback };
+          return {
+            instrument: resolvedInstrument,
+            records: history.records,
+            forecast: forecast.records,
+            news: news.records,
+            fallback: news.meta.fallback_used,
+          };
         }),
       );
 
-      const nextRecords: Record<string, StockRecord[]> = {};
-      const nextForecast: Record<string, StockRecord[]> = {};
-      const nextNews: Record<string, StockRecord[]> = {};
+      const nextRecords: Record<string, PriceBar[]> = {};
+      const nextForecast: Record<string, ForecastPoint[]> = {};
+      const nextNews: Record<string, NewsItem[]> = {};
       const nextFallback: Record<string, boolean> = {};
+      const nextSelectedStocks: Instrument[] = [];
 
       for (const item of result) {
-        nextRecords[item.stock.code] = item.records;
-        nextForecast[item.stock.code] = item.forecast;
-        nextNews[item.stock.code] = item.news;
-        nextFallback[item.stock.code] = item.fallback;
-        if (currentUser) void logHistory(currentUser, item.stock.name, item.stock.code);
+        nextSelectedStocks.push(item.instrument);
+        nextRecords[item.instrument.id] = item.records;
+        nextForecast[item.instrument.id] = item.forecast;
+        nextNews[item.instrument.id] = item.news;
+        nextFallback[item.instrument.id] = item.fallback;
+        if (currentUser) void logHistory(currentUser, item.instrument.display_name, item.instrument.symbol);
       }
 
+      setSelectedStocks(nextSelectedStocks);
       setRecordsByCode(nextRecords);
       setForecastByCode(nextForecast);
       setNewsByCode(nextNews);
       setNewsFallbackByCode(nextFallback);
+      if (!nextSelectedStocks.some((item) => item.id === activeCode)) {
+        setActiveCode(nextSelectedStocks[0]?.id ?? "");
+      }
       setActiveTab("overview");
       await refreshHistory();
       return true;
@@ -242,18 +255,26 @@ export default function App() {
   async function exportPdf() {
     if (!activeStock || !activeRecords.length) return false;
     if (currentPdf) {
+      setPdfStatus("已使用缓存报告，正在下载。");
       download(currentPdf);
       return true;
     }
+    setPdfGenerating(true);
+    setPdfStatus("正在生成 PDF 报告，请稍候...");
+    setWorkspaceError("");
     try {
-      const result = await generatePdfReport(activeStock.code, activeStock.name, startDate, endDate);
+      const result = await generatePdfReport(activeStock, startDate, endDate);
       const item = { filename: result.filename, blob: result.bytes };
       setPdfCache((current) => ({ ...current, [pdfKey]: item }));
+      setPdfStatus("报告生成完成，开始下载。");
       download(item);
       return true;
     } catch (error) {
+      setPdfStatus("");
       setWorkspaceError(error instanceof Error ? error.message : "PDF 导出失败。");
       return false;
+    } finally {
+      setPdfGenerating(false);
     }
   }
 
@@ -263,12 +284,13 @@ export default function App() {
     setActiveTab("overview");
   }
 
+  const prefix = pricePrefix(activeStock);
   const metricItems: Array<{ label: string; value: string; hint?: string; tone?: "green" | "yellow" | "gray" }> = [
     {
       label: "最新收盘价",
-      value: money(num(pick(latestRecord, FIELD_MAP.close))),
-      hint: percent(num(pick(latestRecord, FIELD_MAP.pct))),
-      tone: num(pick(latestRecord, FIELD_MAP.pct)) != null && num(pick(latestRecord, FIELD_MAP.pct))! >= 0 ? "green" : "yellow",
+      value: money(latestRecord?.close ?? null, prefix),
+      hint: percent(latestRecord?.pct_change ?? null),
+      tone: latestRecord?.pct_change != null && latestRecord.pct_change >= 0 ? "green" : "yellow",
     },
     { label: "区间收益率", value: percent(metrics.total), hint: "按当前分析周期计算", tone: "green" },
     { label: "年化波动率", value: percent(metrics.volatility), hint: "衡量价格波动强度", tone: "gray" },
@@ -278,7 +300,7 @@ export default function App() {
   function renderModule() {
     switch (activeTab) {
       case "overview":
-        return <OverviewPage ready={analysisReady} comparisonSeries={comparisonSeries} activeNews={activeNews} latestRecord={latestRecord} />;
+        return <OverviewPage ready={analysisReady} activeStock={activeStock} comparisonSeries={comparisonSeries} activeNews={activeNews} latestRecord={latestRecord} />;
       case "market":
         return <MarketAnalysisPage ready={analysisReady} activeRecords={activeRecords} comparisonSeries={comparisonSeries} />;
       case "technical":
@@ -294,8 +316,11 @@ export default function App() {
           <HistoryPage
             items={historyItems}
             onSetActiveCode={(code) => {
-              setActiveCode(code);
-              setActiveTab("overview");
+              const target = selectedStocks.find((item) => item.symbol === code);
+              if (target) {
+                setActiveCode(target.id);
+                setActiveTab("overview");
+              }
             }}
             onDelete={(id) => {
               void deleteHistoryItem(id).then(refreshHistory);
@@ -371,6 +396,10 @@ export default function App() {
       onLogout={logout}
       onExportPdf={() => exportPdf()}
       exportDisabled={!activeRecords.length}
+      exportLoading={pdfGenerating}
+      exportStatus={pdfStatus}
+      workspaceError={workspaceError}
     />
   );
 }
+

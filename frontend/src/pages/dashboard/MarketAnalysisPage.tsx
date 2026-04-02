@@ -2,12 +2,12 @@
 import { ChartCarousel } from "../../components/dashboard/ChartCarousel";
 import { EmptyStatePanel } from "../../components/dashboard/EmptyStatePanel";
 import { DataTable } from "../../components/dashboard/DataTable";
-import type { StockRecord } from "../../types";
+import type { PriceBar } from "../../types";
 
 type MarketAnalysisPageProps = {
   ready: boolean;
-  activeRecords: StockRecord[];
-  comparisonSeries: Array<{ name: string; records: StockRecord[] }>;
+  activeRecords: PriceBar[];
+  comparisonSeries: Array<{ name: string; records: PriceBar[] }>;
 };
 
 export function MarketAnalysisPage({ ready, activeRecords, comparisonSeries }: MarketAnalysisPageProps) {

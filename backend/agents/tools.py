@@ -17,7 +17,7 @@ def _resolve_date_range(start_date: str | None, end_date: str | None) -> tuple[d
 
 @tool
 def lookup_stock_name(symbol: str) -> str:
-    """Return the display name for an A-share stock code such as 002594."""
+    """Return the display name for an A-share stock symbol such as 002594."""
 
     return get_stock_name(symbol)
 
@@ -31,15 +31,15 @@ def get_stock_price_summary(symbol: str, start_date: str | None = None, end_date
     if df is None or df.empty:
         return f"未获取到 {symbol} 的行情数据。"
 
-    calc_df = df.sort_values("日期").reset_index(drop=True)
+    calc_df = df.sort_values("trade_date").reset_index(drop=True)
     first_row = calc_df.iloc[0]
     last_row = calc_df.iloc[-1]
-    start_price = float(first_row["收盘"])
-    end_price = float(last_row["收盘"])
+    start_price = float(first_row["close"])
+    end_price = float(last_row["close"])
     pct = ((end_price - start_price) / start_price * 100) if start_price else 0.0
-    high_price = float(calc_df["最高"].max())
-    low_price = float(calc_df["最低"].min())
-    avg_volume = float(calc_df["成交量"].tail(min(20, len(calc_df))).mean())
+    high_price = float(calc_df["high"].max())
+    low_price = float(calc_df["low"].min())
+    avg_volume = float(calc_df["volume"].tail(min(20, len(calc_df))).mean())
     stock_name = get_stock_name(symbol)
 
     return (
@@ -51,33 +51,30 @@ def get_stock_price_summary(symbol: str, start_date: str | None = None, end_date
 
 @tool
 def get_stock_news_summary(symbol: str, limit: int = 5) -> str:
-    """Return a compact news summary for a stock code. Use a small limit such as 3 to 5."""
+    """Return a compact news summary for a stock symbol. Use a small limit such as 3 to 5."""
 
     stock_name = get_stock_name(symbol)
     news_df, is_fallback = get_stock_news(symbol, stock_name, limit)
     if news_df is None or news_df.empty:
         return f"未获取到 {stock_name}({symbol}) 的相关新闻。"
 
-    title_col = "新闻标题" if "新闻标题" in news_df.columns else news_df.columns[-1]
-    time_col = "发布时间" if "发布时间" in news_df.columns else None
-
     lines: list[str] = []
     for _, row in news_df.head(limit).iterrows():
         prefix = ""
-        if time_col:
+        if "published_at" in news_df.columns and pd.notna(row.get("published_at")):
             try:
-                prefix = pd.to_datetime(row[time_col]).strftime("%Y-%m-%d") + " "
+                prefix = pd.to_datetime(row["published_at"]).strftime("%Y-%m-%d") + " "
             except Exception:
                 prefix = ""
-        lines.append(f"- {prefix}{row[title_col]}")
+        lines.append(f"- {prefix}{row['title']}")
 
-    source_hint = "行业资讯回退结果" if is_fallback else "个股资讯"
+    source_hint = "行业回退资讯" if is_fallback else "个股资讯"
     return f"{stock_name}({symbol}) 的最新{source_hint}：\n" + "\n".join(lines)
 
 
 @tool
 def get_stock_forecast_summary(symbol: str, days: int = 7) -> str:
-    """Return a short Prophet-based forecast summary for a stock code."""
+    """Return a short Prophet-based forecast summary for a stock symbol."""
 
     end_value = date.today()
     start_value = end_value - timedelta(days=365)
@@ -115,4 +112,3 @@ TOOLS = [
     get_stock_news_summary,
     get_stock_forecast_summary,
 ]
-

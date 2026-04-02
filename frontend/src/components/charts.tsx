@@ -1,20 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
-import type { StockRecord } from "../types";
+import type { ForecastPoint, NewsItem, PriceBar } from "../types";
 
-function toNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function getDate(value: unknown) {
-  return typeof value === "string" ? value.slice(0, 19) : "--";
+function getDate(value: string) {
+  return value.slice(0, 19);
 }
 
 function ChartFrame(props: { title: string; subtitle: string; children: React.ReactNode }) {
@@ -35,21 +24,8 @@ const plotConfig: any = {
   modeBarButtonsToRemove: ["lasso2d", "select2d"],
 };
 
-export function KLineChart(props: { records: StockRecord[] }) {
-  const rows = useMemo(
-    () =>
-      props.records
-        .map((record) => ({
-          date: getDate(record["日期"]),
-          open: toNumber(record["开盘"]),
-          close: toNumber(record["收盘"]),
-          high: toNumber(record["最高"]),
-          low: toNumber(record["最低"]),
-        }))
-        .filter((item) => item.open != null && item.close != null && item.high != null && item.low != null),
-    [props.records],
-  );
-
+export function KLineChart(props: { records: PriceBar[] }) {
+  const rows = props.records.filter((item) => item.open != null && item.close != null && item.high != null && item.low != null);
   if (!rows.length) {
     return null;
   }
@@ -62,13 +38,13 @@ export function KLineChart(props: { records: StockRecord[] }) {
     });
 
   return (
-    <ChartFrame title="股价走势（K线 + 均线）" subtitle="支持 hover 查看 OHLC 数值，交互方式按股票软件习惯处理。">
+    <ChartFrame title="股价走势（K 线 + 均线）" subtitle="支持 hover 查看 OHLC 数据，交互方式按股票软件常用习惯处理。">
       <Plot
         className="w-full"
         data={[
           {
             type: "candlestick",
-            x: rows.map((item) => item.date),
+            x: rows.map((item) => getDate(item.trade_date)),
             open: rows.map((item) => item.open as number),
             close: rows.map((item) => item.close as number),
             high: rows.map((item) => item.high as number),
@@ -80,7 +56,7 @@ export function KLineChart(props: { records: StockRecord[] }) {
           {
             type: "scatter",
             mode: "lines",
-            x: rows.map((item) => item.date),
+            x: rows.map((item) => getDate(item.trade_date)),
             y: ma(5),
             name: "MA5",
             line: { color: "#f59e0b", width: 1.8 },
@@ -88,7 +64,7 @@ export function KLineChart(props: { records: StockRecord[] }) {
           {
             type: "scatter",
             mode: "lines",
-            x: rows.map((item) => item.date),
+            x: rows.map((item) => getDate(item.trade_date)),
             y: ma(20),
             name: "MA20",
             line: { color: "#2563eb", width: 1.8 },
@@ -112,17 +88,8 @@ export function KLineChart(props: { records: StockRecord[] }) {
   );
 }
 
-export function ReturnChart(props: { records: StockRecord[] }) {
-  const rows = useMemo(
-    () =>
-      props.records
-        .map((record) => ({
-          date: getDate(record["日期"]),
-          close: toNumber(record["收盘"]),
-        }))
-        .filter((item) => item.close != null),
-    [props.records],
-  );
+export function ReturnChart(props: { records: PriceBar[] }) {
+  const rows = props.records.filter((item) => item.close != null);
   if (!rows.length) {
     return null;
   }
@@ -138,7 +105,7 @@ export function ReturnChart(props: { records: StockRecord[] }) {
           {
             type: "scatter",
             mode: "lines",
-            x: rows.map((item) => item.date),
+            x: rows.map((item) => getDate(item.trade_date)),
             y: values,
             name: "累计收益率",
             line: { color: "#2563eb", width: 2.5 },
@@ -162,16 +129,181 @@ export function ReturnChart(props: { records: StockRecord[] }) {
   );
 }
 
-export function ComparisonChart(props: { series: Array<{ name: string; records: StockRecord[] }> }) {
+export function MacdChart(props: { records: PriceBar[] }) {
+  const rows = props.records.filter((item) => item.close != null);
+  if (rows.length < 12) {
+    return null;
+  }
+
+  const closes = rows.map((item) => item.close as number);
+  const calcEma = (period: number) => {
+    const multiplier = 2 / (period + 1);
+    const result: number[] = [];
+    closes.forEach((price, index) => {
+      if (index === 0) {
+        result.push(price);
+        return;
+      }
+      result.push(price * multiplier + result[index - 1] * (1 - multiplier));
+    });
+    return result;
+  };
+
+  const ema12 = calcEma(12);
+  const ema26 = calcEma(26);
+  const dif = ema12.map((value, index) => value - ema26[index]);
+  const dea: number[] = [];
+  const signalMultiplier = 2 / (9 + 1);
+  dif.forEach((value, index) => {
+    if (index === 0) {
+      dea.push(value);
+      return;
+    }
+    dea.push(value * signalMultiplier + dea[index - 1] * (1 - signalMultiplier));
+  });
+  const histogram = dif.map((value, index) => (value - dea[index]) * 2);
+
+  return (
+    <ChartFrame title="MACD 指标" subtitle="展示 DIF、DEA 与柱体变化，辅助观察趋势强弱与拐点。">
+      <Plot
+        className="w-full"
+        data={[
+          {
+            type: "bar",
+            x: rows.map((item) => getDate(item.trade_date)),
+            y: histogram,
+            name: "MACD",
+            marker: {
+              color: histogram.map((value) => (value >= 0 ? "#ef4444" : "#0f766e")),
+            },
+          },
+          {
+            type: "scatter",
+            mode: "lines",
+            x: rows.map((item) => getDate(item.trade_date)),
+            y: dif,
+            name: "DIF",
+            line: { color: "#2563eb", width: 2 },
+          },
+          {
+            type: "scatter",
+            mode: "lines",
+            x: rows.map((item) => getDate(item.trade_date)),
+            y: dea,
+            name: "DEA",
+            line: { color: "#f59e0b", width: 2 },
+          },
+        ] as any}
+        layout={{
+          autosize: true,
+          height: 420,
+          paper_bgcolor: "#f8fafc",
+          plot_bgcolor: "#f8fafc",
+          margin: { l: 48, r: 24, t: 16, b: 32 },
+          hovermode: "x unified",
+          legend: { orientation: "h" },
+          yaxis: { zeroline: true, zerolinecolor: "#94a3b8" },
+        }}
+        config={plotConfig}
+        useResizeHandler
+      />
+    </ChartFrame>
+  );
+}
+
+export function RsiChart(props: { records: PriceBar[]; period?: number }) {
+  const period = props.period ?? 14;
+  const rows = props.records.filter((item) => item.close != null);
+  if (rows.length <= period) {
+    return null;
+  }
+
+  const closes = rows.map((item) => item.close as number);
+  const changes = closes.map((price, index) => (index === 0 ? 0 : price - closes[index - 1]));
+  const gains = changes.map((value) => (value > 0 ? value : 0));
+  const losses = changes.map((value) => (value < 0 ? Math.abs(value) : 0));
+
+  const rsi: Array<number | null> = [];
+  let avgGain = 0;
+  let avgLoss = 0;
+
+  gains.forEach((gain, index) => {
+    if (index < period) {
+      rsi.push(null);
+      avgGain += gain;
+      avgLoss += losses[index];
+      return;
+    }
+    if (index === period) {
+      avgGain /= period;
+      avgLoss /= period;
+    } else {
+      avgGain = (avgGain * (period - 1) + gain) / period;
+      avgLoss = (avgLoss * (period - 1) + losses[index]) / period;
+    }
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    rsi.push(100 - 100 / (1 + rs));
+  });
+
+  return (
+    <ChartFrame title="RSI 指标" subtitle="观察超买超卖区间，辅助判断短期热度变化。">
+      <Plot
+        className="w-full"
+        data={[
+          {
+            type: "scatter",
+            mode: "lines",
+            x: rows.map((item) => getDate(item.trade_date)),
+            y: rsi,
+            name: `RSI(${period})`,
+            line: { color: "#7c3aed", width: 2.5 },
+          },
+        ] as any}
+        layout={{
+          autosize: true,
+          height: 360,
+          paper_bgcolor: "#f8fafc",
+          plot_bgcolor: "#f8fafc",
+          margin: { l: 48, r: 24, t: 16, b: 32 },
+          hovermode: "x unified",
+          yaxis: { range: [0, 100], zeroline: false },
+          shapes: [
+            {
+              type: "line",
+              xref: "paper",
+              x0: 0,
+              x1: 1,
+              y0: 70,
+              y1: 70,
+              line: { color: "#ef4444", width: 1.2, dash: "dash" },
+            },
+            {
+              type: "line",
+              xref: "paper",
+              x0: 0,
+              x1: 1,
+              y0: 30,
+              y1: 30,
+              line: { color: "#0f766e", width: 1.2, dash: "dash" },
+            },
+          ],
+          annotations: [
+            { xref: "paper", x: 1, y: 70, text: "超买线", showarrow: false, font: { size: 11, color: "#ef4444" } },
+            { xref: "paper", x: 1, y: 30, text: "超卖线", showarrow: false, font: { size: 11, color: "#0f766e" } },
+          ],
+        }}
+        config={plotConfig}
+        useResizeHandler
+      />
+    </ChartFrame>
+  );
+}
+
+export function ComparisonChart(props: { series: Array<{ name: string; records: PriceBar[] }> }) {
   const palette = ["#ef4444", "#0f766e", "#7c3aed"];
   const traces = props.series
     .map((item, index) => {
-      const rows = item.records
-        .map((record) => ({
-          date: getDate(record["日期"]),
-          close: toNumber(record["收盘"]),
-        }))
-        .filter((row) => row.close != null);
+      const rows = item.records.filter((row) => row.close != null);
       if (rows.length < 2) {
         return null;
       }
@@ -179,7 +311,7 @@ export function ComparisonChart(props: { series: Array<{ name: string; records: 
       return {
         type: "scatter" as const,
         mode: "lines",
-        x: rows.map((row) => row.date),
+        x: rows.map((row) => getDate(row.trade_date)),
         y: rows.map((row) => (((row.close as number) - base) / base) * 100),
         name: item.name,
         line: { width: 2.4, color: palette[index % palette.length] },
@@ -213,21 +345,9 @@ export function ComparisonChart(props: { series: Array<{ name: string; records: 
   );
 }
 
-export function ForecastChart(props: { history: StockRecord[]; forecast: StockRecord[] }) {
-  const historyRows = props.history
-    .map((record) => ({
-      date: getDate(record["日期"]),
-      close: toNumber(record["收盘"]),
-    }))
-    .filter((item) => item.close != null);
-  const forecastRows = props.forecast
-    .map((record) => ({
-      date: getDate(record["ds"]),
-      yhat: toNumber(record["yhat"]),
-      upper: toNumber(record["yhat_upper"]),
-      lower: toNumber(record["yhat_lower"]),
-    }))
-    .filter((item) => item.yhat != null && item.upper != null && item.lower != null);
+export function ForecastChart(props: { history: PriceBar[]; forecast: ForecastPoint[] }) {
+  const historyRows = props.history.filter((item) => item.close != null);
+  const forecastRows = props.forecast.filter((item) => item.yhat != null && item.yhat_upper != null && item.yhat_lower != null);
 
   if (!historyRows.length || !forecastRows.length) {
     return null;
@@ -243,8 +363,8 @@ export function ForecastChart(props: { history: StockRecord[]; forecast: StockRe
           {
             type: "scatter",
             mode: "lines",
-            x: futureRows.map((item) => item.date),
-            y: futureRows.map((item) => item.upper),
+            x: futureRows.map((item) => getDate(item.ds)),
+            y: futureRows.map((item) => item.yhat_upper),
             line: { width: 0 },
             hoverinfo: "skip",
             showlegend: false,
@@ -252,8 +372,8 @@ export function ForecastChart(props: { history: StockRecord[]; forecast: StockRe
           {
             type: "scatter",
             mode: "lines",
-            x: futureRows.map((item) => item.date),
-            y: futureRows.map((item) => item.lower),
+            x: futureRows.map((item) => getDate(item.ds)),
+            y: futureRows.map((item) => item.yhat_lower),
             line: { width: 0 },
             fill: "tonexty",
             fillcolor: "rgba(37,99,235,0.18)",
@@ -262,7 +382,7 @@ export function ForecastChart(props: { history: StockRecord[]; forecast: StockRe
           {
             type: "scatter",
             mode: "lines",
-            x: historyRows.map((item) => item.date),
+            x: historyRows.map((item) => getDate(item.trade_date)),
             y: historyRows.map((item) => item.close),
             name: "历史收盘",
             line: { color: "#111827", width: 2.4 },
@@ -270,7 +390,7 @@ export function ForecastChart(props: { history: StockRecord[]; forecast: StockRe
           {
             type: "scatter",
             mode: "lines+markers",
-            x: futureRows.map((item) => item.date),
+            x: futureRows.map((item) => getDate(item.ds)),
             y: futureRows.map((item) => item.yhat),
             name: "未来预测",
             line: { color: "#dc2626", width: 2.8 },
@@ -330,28 +450,20 @@ export function SentimentGaugeChart(props: { score: number }) {
           <path d="M 194 80 A 92 92 0 0 1 252 160" fill="none" stroke="#dcfce7" strokeWidth="22" strokeLinecap="round" />
           <line x1={centerX} y1={centerY} x2={pointerX} y2={pointerY} stroke={color} strokeWidth="6" strokeLinecap="round" />
           <circle cx={centerX} cy={centerY} r="10" fill={color} />
-          <text x="146" y="128" fill="#111827" fontSize="34" fontWeight="700">
-            {Math.round(displayScore)}
-          </text>
-          <text x="48" y="192" fill="#64748b" fontSize="14">
-            偏弱
-          </text>
-          <text x="146" y="56" fill="#64748b" fontSize="14">
-            中性
-          </text>
-          <text x="236" y="192" fill="#64748b" fontSize="14">
-            偏强
-          </text>
+          <text x="146" y="128" fill="#111827" fontSize="34" fontWeight="700">{Math.round(displayScore)}</text>
+          <text x="48" y="192" fill="#64748b" fontSize="14">偏弱</text>
+          <text x="146" y="56" fill="#64748b" fontSize="14">中性</text>
+          <text x="236" y="192" fill="#64748b" fontSize="14">偏强</text>
         </svg>
       </div>
     </ChartFrame>
   );
 }
 
-export function NewsHeatChart(props: { records: StockRecord[] }) {
+export function NewsHeatChart(props: { records: NewsItem[] }) {
   const counts = new Map<string, number>();
   for (const record of props.records) {
-    const key = getDate(record["发布时间"]).slice(0, 10);
+    const key = getDate(record.published_at).slice(0, 10);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   const entries = [...counts.entries()].slice(-10);
@@ -386,3 +498,4 @@ export function NewsHeatChart(props: { records: StockRecord[] }) {
     </ChartFrame>
   );
 }
+

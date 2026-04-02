@@ -1,4 +1,12 @@
-import type { ForecastResponse, HistoryItem, NewsResponse, StockRecord } from "../types";
+import type {
+  ForecastPoint,
+  ForecastResponse,
+  HistoryItem,
+  Instrument,
+  NewsResponse,
+  PriceBar,
+  PriceHistoryResponse,
+} from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
@@ -46,41 +54,52 @@ export async function login(username: string, password: string) {
   });
 }
 
-export async function getStockName(symbol: string) {
-  const payload = await request<{ name: string }>(`/stocks/name/${symbol}`);
+export async function resolveInstrument(symbol: string, market?: Instrument["market"]) {
+  return request<Instrument>("/instruments/resolve", {
+    method: "POST",
+    body: JSON.stringify({ symbol, market }),
+  });
+}
+
+export async function getStockName(symbol: string, market?: Instrument["market"]) {
+  const query = market ? `?market=${market}` : "";
+  const payload = await request<{ name: string }>(`/stocks/name/${symbol}${query}`);
   return payload.name;
 }
 
-export async function getStockData(symbol: string, startDate: string, endDate: string) {
-  const payload = await request<{ records: StockRecord[] }>("/stocks/data", {
+export async function getPriceHistory(instrument: Instrument, startDate: string, endDate: string) {
+  return request<PriceHistoryResponse>("/stocks/data", {
     method: "POST",
     body: JSON.stringify({
-      symbol,
+      market: instrument.market,
+      symbol: instrument.symbol,
       start_date: startDate,
       end_date: endDate,
     }),
   });
+}
+
+export async function getStockData(instrument: Instrument, startDate: string, endDate: string) {
+  const payload = await getPriceHistory(instrument, startDate, endDate);
   return payload.records;
 }
 
-export async function getStockNews(symbol: string, stockName?: string, limit = 6) {
+export async function getStockNews(instrument: Instrument, limit = 6) {
   return request<NewsResponse>("/stocks/news", {
     method: "POST",
     body: JSON.stringify({
-      symbol,
-      stock_name: stockName,
+      market: instrument.market,
+      symbol: instrument.symbol,
+      stock_name: instrument.display_name,
       limit,
     }),
   });
 }
 
-export async function getForecast(records: StockRecord[], days = 7) {
+export async function getForecast(records: PriceBar[], days = 7) {
   return request<ForecastResponse>("/forecast", {
     method: "POST",
-    body: JSON.stringify({
-      records,
-      days,
-    }),
+    body: JSON.stringify({ records, days }),
   });
 }
 
@@ -142,15 +161,16 @@ export async function* streamAssistant(messages: Array<{ role: string; content: 
   }
 }
 
-export async function generatePdfReport(symbol: string, stockName: string, startDate: string, endDate: string) {
+export async function generatePdfReport(instrument: Instrument, startDate: string, endDate: string) {
   const response = await fetch(`${API_BASE_URL}/reports/pdf`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      symbol,
-      stock_name: stockName,
+      market: instrument.market,
+      symbol: instrument.symbol,
+      stock_name: instrument.display_name,
       start_date: startDate,
       end_date: endDate,
     }),
@@ -161,7 +181,7 @@ export async function generatePdfReport(symbol: string, stockName: string, start
     throw new Error(payload.detail ?? `Request failed: ${response.status}`);
   }
 
-  const filename = getFilenameFromHeaders(response, `${symbol}_report.pdf`);
+  const filename = getFilenameFromHeaders(response, `${instrument.symbol}_report.pdf`);
   const bytes = await response.blob();
   return { filename, bytes };
 }
@@ -193,3 +213,5 @@ export async function deleteAllUserHistory(username: string) {
     method: "DELETE",
   });
 }
+
+export type { ForecastPoint, PriceBar };

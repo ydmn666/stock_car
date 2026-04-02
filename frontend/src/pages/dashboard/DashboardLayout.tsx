@@ -4,13 +4,13 @@ import { ContextHeader } from "../../components/dashboard/ContextHeader";
 import { MetricStrip } from "../../components/dashboard/MetricStrip";
 import type { WorkspaceTab } from "../../lib/workspace";
 import { WORKSPACE_TABS } from "../../lib/workspace";
-import type { StockOption } from "../../types";
+import type { Instrument } from "../../types";
 
 type DashboardLayoutProps = {
   currentUser: string;
   health: string;
   activeTab: WorkspaceTab;
-  activeStock: StockOption | null;
+  activeStock: Instrument | null;
   startDate: string;
   endDate: string;
   metricItems: Array<{ label: string; value: string; hint?: string; tone?: "green" | "yellow" | "gray" }>;
@@ -21,6 +21,9 @@ type DashboardLayoutProps = {
   onLogout: () => void;
   onExportPdf: () => Promise<boolean | void>;
   exportDisabled: boolean;
+  exportLoading: boolean;
+  exportStatus: string;
+  workspaceError: string;
 };
 
 export function DashboardLayout(props: DashboardLayoutProps) {
@@ -35,7 +38,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
             <span className="text-2xl font-black tracking-tight text-[#165DFF]">动能智投</span>
             <nav className="hidden gap-7 text-sm text-slate-500 xl:flex">
               <span className="text-white">新能源汽车智能投研工作台</span>
-              <span>多市场分析</span>
+              <span>A 股深度分析</span>
               <span>AI 辅助问答</span>
               <span>个人投资模块预留</span>
             </nav>
@@ -43,7 +46,9 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           <div className="flex items-center gap-3">
             <span className="hidden rounded-full border border-white/8 px-3 py-2 text-xs text-slate-400 xl:inline-flex">{props.currentUser || "访客"} · {props.health === "ok" ? "系统在线" : "系统检测中"}</span>
             <AppButton variant="secondary" onClick={props.onBackToSetup}>重新配置</AppButton>
-            <AppButton variant="secondary" onClick={() => void props.onExportPdf()} disabled={props.exportDisabled}>导出报告</AppButton>
+            <AppButton variant="secondary" onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
+              {props.exportLoading ? "正在生成报告..." : "导出报告"}
+            </AppButton>
             <AppButton variant="ghost" onClick={props.onLogout}>退出</AppButton>
           </div>
         </div>
@@ -72,10 +77,14 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               actions={
                 <>
                   <AppButton variant="secondary" onClick={props.onBackToSetup}>切换股票</AppButton>
-                  <AppButton onClick={() => void props.onExportPdf()} disabled={props.exportDisabled}>生成当前报告</AppButton>
+                  <AppButton onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
+                    {props.exportLoading ? "正在生成报告..." : "生成当前报告"}
+                  </AppButton>
                 </>
               }
             />
+            {props.exportStatus ? <div className="rounded-2xl border border-[#165DFF]/20 bg-[#165DFF]/10 px-4 py-3 text-sm text-slate-100">{props.exportStatus}</div> : null}
+            {props.workspaceError ? <div className="rounded-2xl border border-[#F87272]/30 bg-[#F87272]/10 px-4 py-3 text-sm text-[#FFD6D6]">{props.workspaceError}</div> : null}
             <MetricStrip items={props.metricItems} />
             <section>{props.moduleContent}</section>
           </div>
@@ -93,3 +102,4 @@ export function DashboardLayout(props: DashboardLayoutProps) {
     </div>
   );
 }
+

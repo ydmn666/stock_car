@@ -10,6 +10,7 @@ bcrypt
 numpy
 openai
 requests
+baostock
 fastapi
 uvicorn
 langchain

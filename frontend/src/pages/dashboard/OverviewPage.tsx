@@ -1,13 +1,14 @@
 ﻿import { ComparisonChart } from "../../components/charts";
 import { EmptyStatePanel } from "../../components/dashboard/EmptyStatePanel";
-import { getNewsTime, getNewsTitle, money, num, percent, pick, FIELD_MAP } from "../../lib/workspace";
-import type { StockRecord } from "../../types";
+import { getNewsTime, getNewsTitle, money, percent, pricePrefix } from "../../lib/workspace";
+import type { Instrument, NewsItem, PriceBar } from "../../types";
 
 type OverviewPageProps = {
   ready: boolean;
-  comparisonSeries: Array<{ name: string; records: StockRecord[] }>;
-  activeNews: StockRecord[];
-  latestRecord?: StockRecord;
+  activeStock: Instrument | null;
+  comparisonSeries: Array<{ name: string; records: PriceBar[] }>;
+  activeNews: NewsItem[];
+  latestRecord?: PriceBar;
 };
 
 function StatCard(props: { label: string; value: string; hint?: string }) {
@@ -20,12 +21,13 @@ function StatCard(props: { label: string; value: string; hint?: string }) {
   );
 }
 
-export function OverviewPage({ ready, comparisonSeries, activeNews, latestRecord }: OverviewPageProps) {
+export function OverviewPage({ ready, activeStock, comparisonSeries, activeNews, latestRecord }: OverviewPageProps) {
   if (!ready) {
     return <EmptyStatePanel title="请先在选股配置页选择股票后开始分析" description="完成市场、股票与时间区间配置后，这里会展示多股收益对比、当前行情摘要和最近资讯摘要。" />;
   }
 
   const validSeries = comparisonSeries.filter((item) => item.records.length > 1);
+  const prefix = pricePrefix(activeStock);
 
   return (
     <div className="space-y-4">
@@ -48,10 +50,10 @@ export function OverviewPage({ ready, comparisonSeries, activeNews, latestRecord
             <h3 className="mt-2 text-2xl font-semibold text-white">当前行情摘要</h3>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <StatCard label="开盘价" value={money(num(pick(latestRecord, FIELD_MAP.open)))} />
-            <StatCard label="最高价" value={money(num(pick(latestRecord, FIELD_MAP.high)))} />
-            <StatCard label="最低价" value={money(num(pick(latestRecord, FIELD_MAP.low)))} />
-            <StatCard label="涨跌幅" value={percent(num(pick(latestRecord, FIELD_MAP.pct)))} hint="以当前主标的最新数据计算" />
+            <StatCard label="开盘价" value={money(latestRecord?.open ?? null, prefix)} />
+            <StatCard label="最高价" value={money(latestRecord?.high ?? null, prefix)} />
+            <StatCard label="最低价" value={money(latestRecord?.low ?? null, prefix)} />
+            <StatCard label="涨跌幅" value={percent(latestRecord?.pct_change ?? null)} hint="以当前主标的最新数据计算" />
           </div>
         </div>
 
@@ -61,8 +63,8 @@ export function OverviewPage({ ready, comparisonSeries, activeNews, latestRecord
             <h3 className="mt-2 text-2xl font-semibold text-white">最近资讯</h3>
           </div>
           <div className="space-y-3">
-            {activeNews.slice(0, 4).map((item, index) => (
-              <div key={index} className="rounded-2xl border border-white/8 bg-[#0f0f0f] px-4 py-4">
+            {activeNews.slice(0, 4).map((item) => (
+              <div key={item.id} className="rounded-2xl border border-white/8 bg-[#0f0f0f] px-4 py-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{getNewsTime(item)}</div>
                 <div className="mt-2 text-sm leading-7 text-zinc-200">{getNewsTitle(item)}</div>
               </div>

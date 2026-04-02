@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from backend.utils.network_env import disable_proxy_env
 disable_proxy_env()
@@ -15,6 +15,7 @@ from backend.schemas import (
     ForecastRequest,
     LogHistoryRequest,
     LoginRequest,
+    ResolveInstrumentRequest,
     RegisterRequest,
     ReportRequest,
     StockDataRequest,
@@ -32,26 +33,26 @@ from backend.services.auth_service import (
     register_user,
 )
 from backend.services.forecast_service import generate_forecast
-from backend.services.market_service import get_stock_data, get_stock_name, get_stock_news, init_db
+from backend.services.market_service import get_instrument_payload, get_news_payload, get_price_history_payload, get_stock_name, init_db
 from backend.services.report_service import cleanup_expired_reports, get_or_create_stock_report
 
 
 app = FastAPI()
 
-# 1. 替换这一段 CORS 配置
+# 允许前端容器与本地开发环境直接访问后端 API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # 允许所有 cpolar 随机域名访问
-    allow_credentials=False,  # 核心！公网跨域配置为 False，解决 Failed to fetch 报错
-    allow_methods=["*"],      # 允许所有请求方法 (GET, POST, OPTIONS 等)
-    allow_headers=["*"],      # 允许所有请求头
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 2. 顺手加一个“正门”，放在 @app.on_event("startup") 下方即可
-# 这个是为了防止你直接访问链接时看到恼人的 {"detail":"Not Found"}
+# 2. 椤烘墜鍔犱竴涓€滄闂ㄢ€濓紝鏀惧湪 @app.on_event("startup") 涓嬫柟鍗冲彲
+# 杩欎釜鏄负浜嗛槻姝綘鐩存帴璁块棶閾炬帴鏃剁湅鍒版伡浜虹殑 {"detail":"Not Found"}
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "后端引擎已全面启动！"}
+    return {"status": "ok", "message": "后端服务已启动。"}
 
 
 @app.on_event("startup")
@@ -66,32 +67,45 @@ def health_check():
 
 
 @app.get("/stocks/name/{symbol}")
-def stock_name(symbol: str):
-    return {"name": get_stock_name(symbol)}
+def stock_name(symbol: str, market: str | None = None):
+    try:
+        return {"name": get_stock_name(symbol, market)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/instruments/resolve")
+def resolve_stock_instrument(payload: ResolveInstrumentRequest):
+    try:
+        return get_instrument_payload(payload.symbol, payload.market)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/stocks/data")
 def stock_data(payload: StockDataRequest):
     try:
-        df = get_stock_data(
+        return get_price_history_payload(
             payload.symbol,
             datetime.strptime(payload.start_date, "%Y-%m-%d").date(),
             datetime.strptime(payload.end_date, "%Y-%m-%d").date(),
+            payload.market,
+            payload.debug_fail_providers,
         )
-        return {"records": dataframe_to_records(df)}
     except Exception as exc:
         traceback.print_exc()
         raise HTTPException(
             status_code=502,
-            detail=f"股票数据源访问失败，请稍后重试: {exc}"
+            detail=f"股票数据源访问失败，请稍后重试。{exc}"
         ) from exc
 
 
 @app.post("/stocks/news")
 def stock_news(payload: StockNewsRequest):
     try:
-        df, is_fallback = get_stock_news(payload.symbol, payload.stock_name, payload.limit)
-        return {"records": dataframe_to_records(df), "is_fallback": is_fallback}
+        return get_news_payload(payload.symbol, payload.stock_name, payload.limit, payload.market, payload.debug_fail_providers)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -195,9 +209,16 @@ def generate_pdf_report(payload: ReportRequest):
             stock_name=payload.stock_name,
             start_date=payload.start_date,
             end_date=payload.end_date,
+            market=payload.market,
         )
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+
+

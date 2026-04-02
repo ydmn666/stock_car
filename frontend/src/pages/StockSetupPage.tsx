@@ -1,12 +1,12 @@
 ﻿import { AppButton } from "../components/common/AppButton";
 import { RevealSection } from "../components/common/RevealSection";
 import type { SetupMarket } from "../lib/workspace";
-import type { StockOption } from "../types";
+import type { Instrument } from "../types";
 
 type StockSetupPageProps = {
   currentUser: string;
   market: SetupMarket;
-  selectedStocks: StockOption[];
+  selectedStocks: Instrument[];
   activeCode: string;
   manualCode: string;
   manualError: string;
@@ -21,17 +21,14 @@ type StockSetupPageProps = {
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
   onSetActiveCode: (value: string) => void;
-  onAddStock: (stock: StockOption) => void;
+  onAddStock: (stock: Instrument) => void;
   onAddManualStock: () => void;
   onRemoveStock: (code: string) => void;
-  hotStocks: StockOption[];
+  hotStocks: Instrument[];
 };
 
 const MARKET_OPTIONS: Array<{ key: SetupMarket; label: string; hint: string }> = [
-  { key: "all", label: "跨市场", hint: "同时面向 A 股、美股、港股的代表性标的" },
-  { key: "cn", label: "A 股", hint: "优先关注新能源整车、电池、零部件" },
-  { key: "us", label: "美股", hint: "适合追踪特斯拉、Rivian、充电网络等标的" },
-  { key: "hk", label: "港股", hint: "补充港股新能源车企与产业链公司" },
+  { key: "cn", label: "A 股", hint: "聚焦新能源整车、电池、零部件与产业链核心标的" },
 ];
 
 export function StockSetupPage(props: StockSetupPageProps) {
@@ -59,12 +56,12 @@ export function StockSetupPage(props: StockSetupPageProps) {
             <RevealSection>
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">分析配置页</p>
-                <h1 className="mt-3 max-w-5xl text-4xl font-black leading-tight text-white xl:text-5xl">先定义本轮分析上下文，再进入新能源汽车智能投研工作台</h1>
-                <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-300 xl:text-base xl:leading-8">这里负责统一选择市场、股票与时间区间。后续总览、技术分析、资讯舆情、趋势预测都会共享这份上下文，避免工作台内重复配置。</p>
+                <h1 className="mt-3 max-w-5xl text-4xl font-black leading-tight text-white xl:text-5xl">先定义本轮 A 股分析上下文，再进入新能源汽车智能投研工作台</h1>
+                <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-300 xl:text-base xl:leading-8">这里负责统一选择 A 股股票与时间区间。后续总览、技术分析、资讯舆情、趋势预测都会共享这份上下文，避免工作台内重复配置。</p>
               </div>
             </RevealSection>
 
-            <RevealSection delayMs={80} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealSection delayMs={80} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {MARKET_OPTIONS.map((item) => (
                 <button
                   key={item.key}
@@ -91,15 +88,15 @@ export function StockSetupPage(props: StockSetupPageProps) {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {props.hotStocks.map((stock) => {
-                      const selected = props.selectedStocks.some((item) => item.code === stock.code);
+                      const selected = props.selectedStocks.some((item) => item.id === stock.id);
                       return (
                         <button
-                          key={stock.code}
+                          key={stock.id}
                           type="button"
                           onClick={() => props.onAddStock(stock)}
                           className={`rounded-full px-4 py-2 text-sm transition ${selected ? "bg-[#165DFF] text-white" : "border border-white/8 bg-white/4 text-zinc-300 hover:bg-white/8"}`}
                         >
-                          {stock.name}
+                          {stock.display_name}
                         </button>
                       );
                     })}
@@ -110,7 +107,7 @@ export function StockSetupPage(props: StockSetupPageProps) {
                     <input
                       value={props.manualCode}
                       onChange={(event) => props.onManualCodeChange(event.target.value)}
-                      placeholder="输入股票代码，例如 TSLA / 002594 / 1211.HK"
+                      placeholder="输入 A 股代码，例如 002594 / 300750"
                       className="min-w-0 flex-1 rounded-2xl border border-white/8 bg-[#0d0d0d] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/40"
                     />
                     <AppButton variant="secondary" onClick={props.onAddManualStock}>添加</AppButton>
@@ -120,12 +117,12 @@ export function StockSetupPage(props: StockSetupPageProps) {
                   <div className="mt-4 max-h-[360px] overflow-y-auto pr-1">
                     <div className="grid gap-3 md:grid-cols-2">
                       {props.selectedStocks.map((stock) => (
-                        <div key={stock.code} className={`rounded-[24px] border px-4 py-4 transition ${stock.code === props.activeCode ? "border-[#165DFF]/30 bg-[#165DFF]/10" : "border-white/8 bg-[#101010]"}`}>
-                          <button type="button" className="w-full text-left" onClick={() => props.onSetActiveCode(stock.code)}>
-                            <div className="font-medium text-white">{stock.name}</div>
-                            <div className="mt-1 text-xs text-slate-500">{stock.code}</div>
+                        <div key={stock.id} className={`rounded-[24px] border px-4 py-4 transition ${stock.id === props.activeCode ? "border-[#165DFF]/30 bg-[#165DFF]/10" : "border-white/8 bg-[#101010]"}`}>
+                          <button type="button" className="w-full text-left" onClick={() => props.onSetActiveCode(stock.id)}>
+                            <div className="font-medium text-white">{stock.display_name}</div>
+                            <div className="mt-1 text-xs text-slate-500">{stock.full_symbol}</div>
                           </button>
-                          <button type="button" onClick={() => props.onRemoveStock(stock.code)} className="mt-3 text-xs text-slate-500 transition hover:text-[#F87272]">从本轮分析中移除</button>
+                          <button type="button" onClick={() => props.onRemoveStock(stock.id)} className="mt-3 text-xs text-slate-500 transition hover:text-[#F87272]">从本轮分析中移除</button>
                         </div>
                       ))}
                     </div>
@@ -150,8 +147,8 @@ export function StockSetupPage(props: StockSetupPageProps) {
 
                 <div className="mt-5 rounded-[24px] border border-white/8 bg-[#101010] p-4">
                   <div className="text-sm text-slate-500">当前主标的</div>
-                  <div className="mt-2 text-xl font-semibold text-white">{props.selectedStocks.find((item) => item.code === props.activeCode)?.name ?? "尚未设置"}</div>
-                  <div className="mt-1 text-sm text-slate-500">{props.activeCode || "请先选择股票"}</div>
+                  <div className="mt-2 text-xl font-semibold text-white">{props.selectedStocks.find((item) => item.id === props.activeCode)?.display_name ?? "尚未设置"}</div>
+                  <div className="mt-1 text-sm text-slate-500">{props.selectedStocks.find((item) => item.id === props.activeCode)?.full_symbol ?? "请先选择股票"}</div>
                 </div>
 
                 <div className="mt-4 rounded-[24px] border border-white/8 bg-[#101010] p-4">
@@ -174,3 +171,4 @@ export function StockSetupPage(props: StockSetupPageProps) {
     </div>
   );
 }
+

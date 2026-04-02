@@ -13,7 +13,7 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <RevealSection className="space-y-8" delayMs={60}>
           <div className="inline-flex rounded-full border border-[#36D399]/25 bg-[#36D399]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#36D399]">
-            新能源多市场智能分析平台
+            新能源 A 股智能分析平台
           </div>
           <div className="max-w-4xl">
             <h1 className="text-5xl font-black leading-[1.02] text-white md:text-7xl">
@@ -22,7 +22,7 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
               新能源股票与个人投资全局
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-9 text-slate-300">
-              聚合 A 股、港股、美股等主流市场数据，统一处理行情、资讯、情绪与趋势预测，
+              聚合 A 股主流数据，统一处理行情、资讯、情绪与趋势预测，
               同时记录真实持仓、成本投入和收益变化，让分析结果真正落到个人决策上。
             </p>
           </div>
@@ -32,7 +32,7 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              ["覆盖市场", "A 股 / 港股 / 美股", "多市场统一标的模型"],
+              ["覆盖市场", "A 股", "统一股票与新闻模型"],
               ["核心能力", "行情 + AI + 投资", "分析与个人资产同屏协同"],
               ["输出形态", "图表 / 报告 / 问答", "支持 PDF 导出与智能解释"],
             ].map(([label, value, hint], index) => (
@@ -58,9 +58,9 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
             </div>
             <div className="mt-5 space-y-3">
               {[
-                ["比亚迪", "002594 · 深市", "¥234.10", "+3.85%"],
-                ["特斯拉", "TSLA · NASDAQ", "$182.63", "+1.42%"],
-                ["蔚来", "NIO · NYSE", "$5.82", "-0.45%"],
+                ["比亚迪", "002594.SZ", "￥234.10", "+3.85%"],
+                ["宁德时代", "300750.SZ", "￥265.40", "+2.11%"],
+                ["长安汽车", "000625.SZ", "￥16.82", "-0.45%"],
               ].map(([name, code, price, change]) => (
                 <div key={code} className="flex items-center justify-between rounded-2xl border border-white/8 bg-[#111827] px-4 py-4 transition hover:-translate-y-0.5 hover:border-[#165DFF]/20">
                   <div>
@@ -74,18 +74,10 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
                 </div>
               ))}
             </div>
-            <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.18em] text-slate-500">
-                <span>AI 市场情绪</span>
-                <span className="text-[#36D399]">偏多</span>
-              </div>
-              <div className="h-2 rounded-full bg-white/8">
-                <div className="h-2 w-[78%] rounded-full bg-[#165DFF]" />
-              </div>
-            </div>
           </aside>
         </RevealSection>
       </div>
     </section>
   );
 }
+
