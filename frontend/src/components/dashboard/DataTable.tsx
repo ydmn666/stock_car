@@ -21,16 +21,16 @@ export function DataTable({ records }: DataTableProps) {
   if (!rows.length) return null;
 
   return (
-    <div className="max-h-[560px] overflow-auto overscroll-contain rounded-[22px] border border-white/8 bg-[#0f172a]">
+    <div className="glass-panel max-h-[560px] overflow-auto overscroll-contain rounded-[22px]">
       <table className="min-w-[1080px] text-sm">
-        <thead className="sticky top-0 z-10 bg-[#111827] text-slate-400">
+        <thead className="sticky top-0 z-10 bg-[rgba(255,255,255,0.8)] text-[var(--color-text-soft)] backdrop-blur-[14px]">
           <tr>
             {COLUMNS.map((column) => (
               <th key={column.key} className="whitespace-nowrap px-4 py-3 text-left font-medium">{column.label}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/6 text-slate-200">
+        <tbody className="divide-y divide-[rgba(216,236,242,0.8)] text-[var(--color-text)]">
           {rows.map((record) => (
             <tr key={`${record.instrument_id}:${record.trade_date}`}>
               {COLUMNS.map((column) => (

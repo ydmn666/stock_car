@@ -35,16 +35,16 @@ export function ChartCarousel({ title, eyebrow, items, emptyTitle, emptyDescript
   }
 
   return (
-    <section className="rounded-[28px] border border-white/8 bg-[#111827] p-5 shadow-[0_24px_80px_rgba(2,6,23,0.28)]">
+    <section className="glass-panel rounded-[28px] p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{eyebrow}</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{title}</h3>
-          <p className="mt-2 text-sm leading-7 text-slate-300">{active.summary}</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-text-soft)]">{eyebrow}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">{title}</h3>
+          <p className="mt-2 text-sm leading-7 text-[var(--color-text-muted)]">{active.summary}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => move(-1)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/4 text-slate-300 transition hover:bg-white/8">←</button>
-          <button type="button" onClick={() => move(1)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/4 text-slate-300 transition hover:bg-white/8">→</button>
+          <button type="button" onClick={() => move(-1)} className="glass-chip flex h-10 w-10 items-center justify-center rounded-2xl text-[var(--color-text-muted)] transition hover:bg-white/85">←</button>
+          <button type="button" onClick={() => move(1)} className="glass-chip flex h-10 w-10 items-center justify-center rounded-2xl text-[var(--color-text-muted)] transition hover:bg-white/85">→</button>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -53,13 +53,13 @@ export function ChartCarousel({ title, eyebrow, items, emptyTitle, emptyDescript
             key={item.key}
             type="button"
             onClick={() => setActiveIndex(index)}
-            className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${index === activeIndex ? "bg-[#165DFF] text-white" : "bg-white/4 text-slate-300 hover:bg-white/8"}`}
+            className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${index === activeIndex ? "bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_10px_24px_rgba(34,193,220,0.2)]" : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"}`}
           >
             {item.label}
           </button>
         ))}
       </div>
-      <div className="mt-4 overflow-hidden rounded-[24px] bg-[#0f172a] p-2">{active.content}</div>
+      <div className="glass-panel mt-4 overflow-hidden rounded-[24px] p-2">{active.content}</div>
     </section>
   );
 }

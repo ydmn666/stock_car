@@ -16,7 +16,7 @@ function Md({ content }: { content: string }) {
   const clean = markdown(content);
   if (!clean) return null;
   return (
-    <div className="prose prose-invert max-w-none text-sm prose-p:my-0 prose-p:leading-7 prose-li:leading-7 prose-strong:text-white">
+    <div className="prose prose-invert max-w-none text-sm prose-p:my-0 prose-p:leading-7 prose-li:leading-7 prose-strong:text-[var(--color-text)]">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{clean}</ReactMarkdown>
     </div>
   );
@@ -79,14 +79,14 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
   }
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(30,41,59,0.94)_0%,rgba(15,23,42,0.98)_100%)] p-4 shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
-      <div className="shrink-0 border-b border-white/8 pb-3">
+    <aside className="assistant-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] p-4">
+      <div className="shrink-0 border-b border-white/25 pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">右侧智能问答</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-white/75">右侧智能问答</p>
             <h3 className="mt-2 text-2xl font-semibold text-white">AI 助手</h3>
           </div>
-          <span className="rounded-full border border-[#36D399]/25 bg-[#36D399]/12 px-3 py-1 text-[11px] text-[#36D399]">{currentUser || "访客模式"}</span>
+          <span className="rounded-full border border-white/28 bg-white/12 px-3 py-1 text-[11px] text-white">{currentUser || "访客模式"}</span>
         </div>
       </div>
 
@@ -94,21 +94,21 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
         <div className="h-full overflow-y-auto overscroll-contain pr-1">
           <div className="flex min-h-full flex-col justify-end gap-3">
             {!messages.length ? (
-              <div className="rounded-2xl border border-white/8 bg-[#0f172a] px-4 py-4 text-sm leading-7 text-slate-400">
+              <div className="rounded-2xl border border-white/25 bg-[rgba(255,255,255,0.12)] px-4 py-4 text-sm leading-7 text-white/88">
                 暂无对话，直接从下方输入框开始提问即可。
               </div>
             ) : null}
             {messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className={`rounded-2xl px-4 py-3 text-sm leading-7 ${message.role === "user" ? "ml-auto max-w-[92%] bg-[#165DFF] text-white" : "max-w-[96%] border border-white/8 bg-[#0f172a] text-slate-200"}`}>
+              <div key={`${message.role}-${index}`} className={`rounded-2xl px-4 py-3 text-sm leading-7 ${message.role === "user" ? "ml-auto max-w-[92%] bg-white/85 text-[var(--color-text-strong)]" : "max-w-[96%] border border-white/25 bg-[rgba(255,255,255,0.12)] text-white"}`}>
                 {message.role === "user" ? message.content : <Md content={message.content} />}
               </div>
             ))}
-            {loading ? <div className="text-xs text-slate-500">AI 正在整理回答...</div> : null}
+            {loading ? <div className="text-xs text-white/78">AI 正在整理回答...</div> : null}
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-4 shrink-0 space-y-3 border-t border-white/8 pt-4">
+      <form onSubmit={handleSubmit} className="mt-4 shrink-0 space-y-3 border-t border-white/22 pt-4">
         <textarea
           ref={textareaRef}
           value={input}
@@ -118,7 +118,7 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
             resizeTextarea(value);
           }}
           rows={1}
-          className="min-h-[52px] w-full resize-none overflow-y-auto rounded-[20px] border border-white/8 bg-[#0b1220] px-4 py-3 text-sm leading-7 text-white outline-none transition focus:border-[#165DFF]/50"
+          className="min-h-[52px] w-full resize-none overflow-y-auto rounded-[20px] border border-white/28 bg-[rgba(255,255,255,0.22)] px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/75 focus:border-white/40"
           placeholder="填写问答，例：询问股票走势"
         />
         <div className="flex items-center justify-between gap-3">
@@ -128,13 +128,13 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
                 key={item}
                 type="button"
                 onClick={() => void send(item)}
-                className="rounded-full border border-white/8 bg-white/4 px-3 py-2 text-[11px] text-slate-300 transition hover:border-[#165DFF]/30 hover:bg-[#165DFF]/10"
+                className="rounded-full border border-white/24 bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[11px] text-white/92 transition hover:bg-[rgba(255,255,255,0.18)]"
               >
                 {item}
               </button>
             ))}
           </div>
-          <button type="submit" className="inline-flex min-w-[120px] items-center justify-center rounded-2xl border border-[#165DFF] bg-[#165DFF] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50" disabled={loading}>发送</button>
+          <button type="submit" className="inline-flex min-w-[120px] items-center justify-center rounded-2xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(34,193,220,0.24)] transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50" disabled={loading}>发送</button>
         </div>
       </form>
     </aside>

@@ -13,10 +13,10 @@ type OverviewPageProps = {
 
 function StatCard(props: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-[24px] border border-white/8 bg-[#121212] px-5 py-4">
-      <p className="text-sm text-slate-500">{props.label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{props.value}</p>
-      {props.hint ? <p className="mt-2 text-sm text-slate-300">{props.hint}</p> : null}
+    <div className="glass-panel rounded-[24px] px-5 py-4">
+      <p className="text-sm text-[var(--color-text-soft)]">{props.label}</p>
+      <p className="mt-3 text-2xl font-semibold text-[var(--color-text-strong)]">{props.value}</p>
+      {props.hint ? <p className="mt-2 text-sm text-[var(--color-text-muted)]">{props.hint}</p> : null}
     </div>
   );
 }
@@ -31,23 +31,23 @@ export function OverviewPage({ ready, activeStock, comparisonSeries, activeNews,
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[28px] border border-white/8 bg-[#151515] p-5">
+      <section className="glass-panel rounded-[28px] p-5">
         <div className="mb-5">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">总览</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">多股票收益对比</h3>
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-text-soft)]">总览</p>
+          <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">多股票收益对比</h3>
         </div>
         {validSeries.length >= 2 ? (
-          <div className="overflow-hidden rounded-[24px] border border-white/8 bg-[#0f0f0f] p-2"><ComparisonChart series={comparisonSeries} /></div>
+          <div className="glass-panel overflow-hidden rounded-[24px] p-2"><ComparisonChart series={comparisonSeries} /></div>
         ) : (
           <EmptyStatePanel title="至少需要两只有效股票" description="当前已选股票里，至少两只成功加载区间行情后，这里才会显示收益率对比图。" />
         )}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="rounded-[28px] border border-white/8 bg-[#151515] p-5">
+        <div className="glass-panel rounded-[28px] p-5">
           <div className="mb-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">总览</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">当前行情摘要</h3>
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-text-soft)]">总览</p>
+            <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">当前行情摘要</h3>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <StatCard label="开盘价" value={money(latestRecord?.open ?? null, prefix)} />
@@ -57,19 +57,19 @@ export function OverviewPage({ ready, activeStock, comparisonSeries, activeNews,
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-white/8 bg-[#151515] p-5">
+        <div className="glass-panel rounded-[28px] p-5">
           <div className="mb-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">总览</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">最近资讯</h3>
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-text-soft)]">总览</p>
+            <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">最近资讯</h3>
           </div>
           <div className="space-y-3">
             {activeNews.slice(0, 4).map((item) => (
-              <div key={item.id} className="rounded-2xl border border-white/8 bg-[#0f0f0f] px-4 py-4">
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{getNewsTime(item)}</div>
-                <div className="mt-2 text-sm leading-7 text-zinc-200">{getNewsTitle(item)}</div>
+              <div key={item.id} className="glass-panel rounded-2xl px-4 py-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">{getNewsTime(item)}</div>
+                <div className="mt-2 text-sm leading-7 text-[var(--color-text)]">{getNewsTitle(item)}</div>
               </div>
             ))}
-            {!activeNews.length ? <p className="text-sm text-slate-500">当前暂无资讯摘要。</p> : null}
+            {!activeNews.length ? <p className="text-sm text-[var(--color-text-soft)]">当前暂无资讯摘要。</p> : null}
           </div>
         </div>
       </section>

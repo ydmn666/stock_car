@@ -12,16 +12,16 @@ type SentimentPageProps = {
 
 function NewsList({ items, fallback }: { items: NewsItem[]; fallback: boolean }) {
   return (
-    <div className="space-y-3 rounded-[24px] border border-white/8 bg-[#101010] p-4">
-      <div className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-slate-300">{fallback ? "当前展示的是行业回退资讯，用于避免个股新闻缺失。" : "当前展示的是与所选股票直接相关的最新资讯。"}</div>
+    <div className="glass-panel space-y-3 rounded-[24px] p-4">
+      <div className="glass-chip rounded-2xl px-4 py-3 text-sm text-[var(--color-text-muted)]">{fallback ? "当前展示的是行业回退资讯，用于避免个股新闻缺失。" : "当前展示的是与所选股票直接相关的最新资讯。"}</div>
       <div className="max-h-[460px] space-y-3 overflow-y-auto overscroll-contain pr-1">
         {items.slice(0, 10).map((item) => {
           const url = getNewsUrl(item);
           return (
-            <div key={item.id} className="rounded-2xl border border-white/8 bg-[#0d0d0d] px-4 py-4">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{getNewsTime(item)}</div>
-              <div className="mt-2 text-sm leading-7 text-zinc-200">{getNewsTitle(item)}</div>
-              {url ? <a href={url} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm text-[#165DFF] hover:underline">查看原文</a> : null}
+            <div key={item.id} className="glass-panel rounded-2xl px-4 py-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">{getNewsTime(item)}</div>
+              <div className="mt-2 text-sm leading-7 text-[var(--color-text)]">{getNewsTitle(item)}</div>
+              {url ? <a href={url} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm text-[var(--color-primary)] hover:underline">查看原文</a> : null}
             </div>
           );
         })}

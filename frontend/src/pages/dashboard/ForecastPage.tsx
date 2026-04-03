@@ -12,13 +12,17 @@ type ForecastPageProps = {
 
 function MetricCard(props: { label: string; value: string; hint: string; tone?: "green" | "yellow" | "gray" }) {
   const toneClass =
-    props.tone === "green" ? "text-[#36D399]" : props.tone === "yellow" ? "text-[#FF9F43]" : "text-white";
+    props.tone === "green"
+      ? "text-[var(--color-profit)]"
+      : props.tone === "yellow"
+        ? "text-[var(--color-risk)]"
+        : "text-[var(--color-text-strong)]";
 
   return (
-    <div className="rounded-[24px] border border-white/8 bg-[#111827] px-5 py-4">
-      <p className="text-sm text-slate-500">{props.label}</p>
+    <div className="glass-panel rounded-[24px] px-5 py-4">
+      <p className="text-sm text-[var(--color-text-soft)]">{props.label}</p>
       <p className={`mt-3 break-all text-[1.65rem] font-semibold leading-tight xl:text-[1.85rem] ${toneClass}`}>{props.value}</p>
-      <p className="mt-2 text-sm text-slate-400">{props.hint}</p>
+      <p className="mt-2 text-sm text-[var(--color-text-muted)]">{props.hint}</p>
     </div>
   );
 }
@@ -36,10 +40,10 @@ function ScenarioPanel(props: {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-      <div className="rounded-[24px] border border-white/8 bg-[#111827] p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">预测结论</p>
-        <h4 className="mt-2 text-2xl font-semibold text-white">{direction}</h4>
-        <p className="mt-3 text-sm leading-7 text-slate-300">
+      <div className="glass-panel rounded-[24px] p-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">预测结论</p>
+        <h4 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">{direction}</h4>
+        <p className="mt-3 text-sm leading-7 text-[var(--color-text-muted)]">
           Prophet 当前更适合作为趋势参考，而不是精确到价位的交易指令。这里把预测中枢、上下边界和最近收盘价并列展示，
           方便你快速判断未来 7 天的可能运行区间。
         </p>
@@ -50,20 +54,20 @@ function ScenarioPanel(props: {
         </div>
       </div>
 
-      <div className="rounded-[24px] border border-white/8 bg-[#111827] p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">风险提示</p>
-        <h4 className="mt-2 text-2xl font-semibold text-white">区间解释</h4>
-        <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
-          <div className="rounded-2xl border border-white/8 bg-[#0f172a] px-4 py-3">
-            最近收盘价：<span className="font-semibold text-white">{money(props.lastClose)}</span>
+      <div className="glass-panel rounded-[24px] p-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">风险提示</p>
+        <h4 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">区间解释</h4>
+        <div className="mt-4 space-y-3 text-sm leading-7 text-[var(--color-text-muted)]">
+          <div className="glass-chip rounded-2xl px-4 py-3">
+            最近收盘价：<span className="font-semibold text-[var(--color-text-strong)]">{money(props.lastClose)}</span>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-[#0f172a] px-4 py-3">
-            预测涨跌幅：<span className={`font-semibold ${tone === "green" ? "text-[#36D399]" : tone === "yellow" ? "text-[#FF9F43]" : "text-white"}`}>{percent(props.changePct)}</span>
+          <div className="glass-chip rounded-2xl px-4 py-3">
+            预测涨跌幅：<span className={`font-semibold ${tone === "green" ? "text-[var(--color-profit)]" : tone === "yellow" ? "text-[var(--color-risk)]" : "text-[var(--color-text-strong)]"}`}>{percent(props.changePct)}</span>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-[#0f172a] px-4 py-3">
+          <div className="glass-chip rounded-2xl px-4 py-3">
             如果预测中枢接近上沿，通常意味着模型趋势较强；如果中枢更靠近下沿，则意味着未来波动空间偏谨慎。
           </div>
-          <div className="rounded-2xl border border-white/8 bg-[#0f172a] px-4 py-3">
+          <div className="glass-chip rounded-2xl px-4 py-3">
             该结果更适合和市场分析、技术分析一起看，单独使用时请把它当作方向辅助，不要视作确定性结论。
           </div>
         </div>
@@ -78,16 +82,16 @@ function ForecastTable(props: { rows: ForecastPoint[] }) {
   }
 
   return (
-    <div className="overflow-auto overscroll-contain rounded-[22px] border border-white/8 bg-[#0f172a]">
+    <div className="glass-panel max-h-[560px] overflow-auto overscroll-contain rounded-[22px]">
       <table className="min-w-[760px] text-sm">
-        <thead className="sticky top-0 z-10 bg-[#111827] text-slate-400">
+        <thead className="sticky top-0 z-10 bg-[rgba(255,255,255,0.8)] text-[var(--color-text-soft)] backdrop-blur-[14px]">
           <tr>
             {["日期", "预测中枢", "下沿区间", "上沿区间", "区间宽度"].map((label) => (
               <th key={label} className="whitespace-nowrap px-4 py-3 text-left font-medium">{label}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/6 text-slate-200">
+        <tbody className="divide-y divide-[rgba(216,236,242,0.8)] text-[var(--color-text)]">
           {props.rows.map((item) => {
             const width =
               item.yhat_upper != null && item.yhat_lower != null && item.yhat
@@ -167,18 +171,18 @@ function RiskAssessmentPanel(props: {
 
       <div className="grid gap-4 xl:grid-cols-3">
         {cards.map((item) => (
-          <div key={item.title} className="rounded-[24px] border border-white/8 bg-[#111827] p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{item.title}</p>
+          <div key={item.title} className="glass-panel rounded-[24px] p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">{item.title}</p>
             <h4 className={`mt-3 text-3xl font-semibold ${item.tone}`}>{item.value}</h4>
-            <p className="mt-4 text-sm leading-7 text-slate-300">{item.desc}</p>
+            <p className="mt-4 text-sm leading-7 text-[var(--color-text-muted)]">{item.desc}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-[24px] border border-white/8 bg-[#111827] p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">风险结论</p>
+      <div className="glass-panel rounded-[24px] p-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">风险结论</p>
         <h4 className={`mt-2 text-2xl font-semibold ${overall.tone}`}>{overall.label}</h4>
-        <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
+        <div className="mt-4 space-y-3 text-sm leading-7 text-[var(--color-text-muted)]">
           <p>{overall.desc}</p>
           <p>如果你看到“方向风险偏高”，通常说明预测中枢明显低于现价；如果“区间风险偏高”，说明上下边界较宽，不确定性更大。</p>
           <p>最稳妥的使用方式是把这里当作“未来 7 天的大致情景判断”，再和技术分析里的 MACD、RSI 以及市场分析页的数据交叉验证。</p>

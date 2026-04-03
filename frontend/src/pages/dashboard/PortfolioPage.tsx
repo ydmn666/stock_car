@@ -50,12 +50,12 @@ const EMPTY_SUMMARY: PortfolioSummary = {
 
 function SectionShell(props: { eyebrow: string; title: string; description: string; actions?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-[28px] border border-white/8 bg-[#151515] p-5">
+    <section className="glass-panel rounded-[28px] p-5">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{props.eyebrow}</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{props.title}</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-400">{props.description}</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-text-soft)]">{props.eyebrow}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">{props.title}</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-text-muted)]">{props.description}</p>
         </div>
         {props.actions ? <div className="flex flex-wrap gap-3">{props.actions}</div> : null}
       </div>
@@ -94,10 +94,10 @@ function SummaryCards(props: { summary: PortfolioSummary }) {
   return (
     <div className={`grid gap-3 lg:grid-cols-2 ${cards.length > 4 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
       {cards.map((item) => (
-        <div key={item.label} className="rounded-[24px] border border-white/8 bg-[#111827] px-5 py-4">
-          <p className="text-sm text-slate-500">{item.label}</p>
-          <p className="mt-3 break-all text-[2rem] font-semibold leading-tight text-white xl:text-[2.2rem]">{item.value}</p>
-          <p className="mt-2 text-sm text-slate-400">{item.hint}</p>
+        <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+          <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
+          <p className="mt-3 break-all text-[2rem] font-semibold leading-tight text-[var(--color-text-strong)] xl:text-[2.2rem]">{item.value}</p>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">{item.hint}</p>
         </div>
       ))}
     </div>
@@ -110,29 +110,29 @@ function PositionsTable(props: { items: PortfolioPosition[] }) {
   }
 
   return (
-    <div className="overflow-auto overscroll-contain rounded-[22px] border border-white/8 bg-[#0f172a]">
+    <div className="glass-panel max-h-[620px] overflow-auto overscroll-contain rounded-[22px]">
       <table className="min-w-[980px] text-sm">
-        <thead className="sticky top-0 z-10 bg-[#111827] text-slate-400">
+        <thead className="sticky top-0 z-10 bg-[rgba(255,255,255,0.8)] text-[var(--color-text-soft)] backdrop-blur-[14px]">
           <tr>
             {["股票", "持仓股数", "成本价", "持仓成本", "最新价", "当前市值", "浮动盈亏", "收益率"].map((label) => (
               <th key={label} className="whitespace-nowrap px-4 py-3 text-left font-medium">{label}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/6 text-slate-200">
+        <tbody className="divide-y divide-[rgba(216,236,242,0.8)] text-[var(--color-text)]">
           {props.items.map((item) => (
             <tr key={item.symbol}>
               <td className="px-4 py-3">
-                <div className="font-medium text-white">{item.stock_name}</div>
-                <div className="mt-1 text-xs text-slate-500">{item.symbol}</div>
+                <div className="font-medium text-[var(--color-text-strong)]">{item.stock_name}</div>
+                <div className="mt-1 text-xs text-[var(--color-text-soft)]">{item.symbol}</div>
               </td>
               <td className="whitespace-nowrap px-4 py-3">{item.quantity.toLocaleString("zh-CN")}</td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.avg_cost)}</td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.cost_basis)}</td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.latest_price)}</td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.market_value)}</td>
-              <td className={`whitespace-nowrap px-4 py-3 ${(item.unrealized_pnl ?? 0) >= 0 ? "text-[#36D399]" : "text-[#FF9F43]"}`}>{money(item.unrealized_pnl)}</td>
-              <td className={`whitespace-nowrap px-4 py-3 ${(item.unrealized_pnl_pct ?? 0) >= 0 ? "text-[#36D399]" : "text-[#FF9F43]"}`}>{percent(item.unrealized_pnl_pct)}</td>
+              <td className={`whitespace-nowrap px-4 py-3 ${(item.unrealized_pnl ?? 0) >= 0 ? "text-[var(--color-profit)]" : "text-[var(--color-risk)]"}`}>{money(item.unrealized_pnl)}</td>
+              <td className={`whitespace-nowrap px-4 py-3 ${(item.unrealized_pnl_pct ?? 0) >= 0 ? "text-[var(--color-profit)]" : "text-[var(--color-risk)]"}`}>{percent(item.unrealized_pnl_pct)}</td>
             </tr>
           ))}
         </tbody>
@@ -153,31 +153,31 @@ function TransactionsTable(props: {
   }
 
   return (
-    <div className="overflow-auto overscroll-contain rounded-[22px] border border-white/8 bg-[#0f172a]">
+    <div className="glass-panel max-h-[620px] overflow-auto overscroll-contain rounded-[22px]">
       <table className="min-w-[980px] text-sm">
-        <thead className="sticky top-0 z-10 bg-[#111827] text-slate-400">
+        <thead className="sticky top-0 z-10 bg-[rgba(255,255,255,0.8)] text-[var(--color-text-soft)] backdrop-blur-[14px]">
           <tr>
             {["日期", "股票", "方向", "价格", "股数", "成交额", "手续费", "备注", "操作"].map((label) => (
               <th key={label} className="whitespace-nowrap px-4 py-3 text-left font-medium">{label}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/6 text-slate-200">
+        <tbody className="divide-y divide-[rgba(216,236,242,0.8)] text-[var(--color-text)]">
           {props.items.map((item) => (
             <tr key={item.id}>
               <td className="whitespace-nowrap px-4 py-3">{item.trade_date}</td>
               <td className="px-4 py-3">
-                <div className="font-medium text-white">{item.stock_name}</div>
-                <div className="mt-1 text-xs text-slate-500">{item.symbol}</div>
+                <div className="font-medium text-[var(--color-text-strong)]">{item.stock_name}</div>
+                <div className="mt-1 text-xs text-[var(--color-text-soft)]">{item.symbol}</div>
               </td>
-              <td className={`whitespace-nowrap px-4 py-3 font-medium ${item.trade_type === "buy" ? "text-[#36D399]" : "text-[#FF9F43]"}`}>
+              <td className={`whitespace-nowrap px-4 py-3 font-medium ${item.trade_type === "buy" ? "text-[var(--color-profit)]" : "text-[var(--color-risk)]"}`}>
                 {item.trade_type === "buy" ? "买入" : "卖出"}
               </td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.price)}</td>
               <td className="whitespace-nowrap px-4 py-3">{item.quantity.toLocaleString("zh-CN")}</td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.amount)}</td>
               <td className="whitespace-nowrap px-4 py-3">{money(item.fee)}</td>
-              <td className="max-w-[220px] px-4 py-3 text-slate-400">{item.note || "--"}</td>
+              <td className="max-w-[220px] px-4 py-3 text-[var(--color-text-muted)]">{item.note || "--"}</td>
               <td className="whitespace-nowrap px-4 py-3">
                 <div className="flex items-center gap-2">
                   <AppButton variant="ghost" onClick={() => props.onEdit(item)} disabled={props.deletingId === item.id}>
@@ -223,19 +223,19 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
           },
           { label: isFlat ? "当前持仓成本" : "当前持仓成本", value: money(latestPoint.holding_cost), hint: isFlat ? "当前已无持仓，因此成本为 0" : "仍在持有仓位的成本" },
         ].map((item) => (
-          <div key={item.label} className="rounded-[24px] border border-white/8 bg-[#111827] px-5 py-4">
-            <p className="text-sm text-slate-500">{item.label}</p>
-            <p className="mt-3 break-all text-[1.8rem] font-semibold leading-tight text-white">{item.value}</p>
-            <p className="mt-2 text-sm text-slate-400">{item.hint}</p>
+          <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+            <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
+            <p className="mt-3 break-all text-[1.8rem] font-semibold leading-tight text-[var(--color-text-strong)]">{item.value}</p>
+            <p className="mt-2 text-sm text-[var(--color-text-muted)]">{item.hint}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-        <div className="rounded-[24px] border border-white/8 bg-[#111827] p-4">
+        <div className="glass-panel rounded-[24px] p-4">
           <div className="mb-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">收益分析</p>
-            <h4 className="mt-2 text-xl font-semibold text-white">账户曲线</h4>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">收益分析</p>
+            <h4 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">账户曲线</h4>
           </div>
           <Plot
             className="w-full"
@@ -248,7 +248,7 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
                   isFlat ? item.cash_returned : item.net_invested < 0 ? Math.abs(item.net_invested) : item.net_invested,
                 ),
                 name: isFlat ? "回笼资金" : isNetCashReturned ? "净回笼" : "净投入",
-                line: { color: "#64748b", width: 2 },
+                line: { color: "#6f879b", width: 2 },
               },
               {
                 type: "scatter",
@@ -256,9 +256,9 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
                 x: props.curve.map((item) => item.date),
                 y: props.curve.map((item) => item.market_value),
                 name: "当前市值",
-                line: { color: "#165DFF", width: 3 },
+                line: { color: "#22c1dc", width: 3 },
                 fill: "tozeroy",
-                fillcolor: "rgba(22,93,255,0.12)",
+                fillcolor: "rgba(34,193,220,0.14)",
               },
               {
                 type: "scatter",
@@ -266,19 +266,19 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
                 x: props.curve.map((item) => item.date),
                 y: props.curve.map((item) => (isFlat ? item.realized_pnl : item.holding_cost)),
                 name: isFlat ? "已实现盈亏" : "持仓成本",
-                line: { color: "#36D399", width: 2, dash: "dash" },
+                line: { color: "#35d0b5", width: 2, dash: "dash" },
               },
             ] as any}
             layout={{
               autosize: true,
               height: 340,
-              paper_bgcolor: "#111827",
-              plot_bgcolor: "#111827",
+              paper_bgcolor: "rgba(255,255,255,0)",
+              plot_bgcolor: "rgba(255,255,255,0)",
               margin: { l: 48, r: 24, t: 16, b: 32 },
               hovermode: "x unified",
-              font: { color: "#e2e8f0" },
-              xaxis: { tickfont: { color: "#94a3b8" } },
-              yaxis: { tickfont: { color: "#94a3b8" } },
+              font: { color: "#1f3a5a" },
+              xaxis: { tickfont: { color: "#6f879b" }, gridcolor: "rgba(216,236,242,0.8)", zerolinecolor: "rgba(216,236,242,0.8)" },
+              yaxis: { tickfont: { color: "#6f879b" }, gridcolor: "rgba(216,236,242,0.8)", zerolinecolor: "rgba(216,236,242,0.8)" },
               legend: { orientation: "h", y: 1.12 },
             }}
             config={{ displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d"] }}
@@ -286,10 +286,10 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
           />
         </div>
 
-        <div className="rounded-[24px] border border-white/8 bg-[#111827] p-4">
+        <div className="glass-panel rounded-[24px] p-4">
           <div className="mb-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">收益分析</p>
-            <h4 className="mt-2 text-xl font-semibold text-white">仓位占比</h4>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">收益分析</p>
+            <h4 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">仓位占比</h4>
           </div>
           {allocationRows.length ? (
             <Plot
@@ -301,16 +301,16 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
                   values: allocationRows.map((item) => item.market_value),
                   textinfo: "label+percent",
                   hole: 0.45,
-                  marker: { colors: ["#165DFF", "#36D399", "#FF9F43", "#F87272", "#7C3AED"] },
+                  marker: { colors: ["#22c1dc", "#35d0b5", "#7be3d2", "#f06b74", "#5e9fca"] },
                 },
               ] as any}
               layout={{
                 autosize: true,
                 height: 340,
-                paper_bgcolor: "#111827",
-                plot_bgcolor: "#111827",
+                paper_bgcolor: "rgba(255,255,255,0)",
+                plot_bgcolor: "rgba(255,255,255,0)",
                 margin: { l: 16, r: 16, t: 16, b: 16 },
-                font: { color: "#e2e8f0" },
+                font: { color: "#1f3a5a" },
                 showlegend: false,
               }}
               config={{ displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d"] }}
@@ -322,31 +322,31 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
         </div>
       </div>
 
-      <div className="rounded-[24px] border border-white/8 bg-[#111827] p-4">
+      <div className="glass-panel rounded-[24px] p-4">
         <div className="mb-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">收益分析</p>
-          <h4 className="mt-2 text-xl font-semibold text-white">持仓表现拆解</h4>
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">收益分析</p>
+          <h4 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">持仓表现拆解</h4>
         </div>
         {allocationRows.length ? (
-          <div className="overflow-auto overscroll-contain rounded-[18px] border border-white/8 bg-[#0f172a]">
+          <div className="glass-panel max-h-[520px] overflow-auto overscroll-contain rounded-[18px]">
             <table className="min-w-[760px] text-sm">
-              <thead className="sticky top-0 z-10 bg-[#111827] text-slate-400">
+              <thead className="sticky top-0 z-10 bg-[rgba(255,255,255,0.8)] text-[var(--color-text-soft)] backdrop-blur-[14px]">
                 <tr>
                   {["股票", "当前市值", "仓位占比", "浮动盈亏"].map((label) => (
                     <th key={label} className="whitespace-nowrap px-4 py-3 text-left font-medium">{label}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/6 text-slate-200">
+              <tbody className="divide-y divide-[rgba(216,236,242,0.8)] text-[var(--color-text)]">
                 {allocationRows.map((item) => (
                   <tr key={item.symbol}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-white">{item.stock_name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{item.symbol}</div>
+                      <div className="font-medium text-[var(--color-text-strong)]">{item.stock_name}</div>
+                      <div className="mt-1 text-xs text-[var(--color-text-soft)]">{item.symbol}</div>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">{money(item.market_value)}</td>
                     <td className="whitespace-nowrap px-4 py-3">{percent(item.weight_pct)}</td>
-                    <td className={`whitespace-nowrap px-4 py-3 ${(item.unrealized_pnl ?? 0) >= 0 ? "text-[#36D399]" : "text-[#FF9F43]"}`}>{money(item.unrealized_pnl)}</td>
+                    <td className={`whitespace-nowrap px-4 py-3 ${(item.unrealized_pnl ?? 0) >= 0 ? "text-[var(--color-profit)]" : "text-[var(--color-risk)]"}`}>{money(item.unrealized_pnl)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -524,7 +524,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[28px] border border-white/8 bg-[#151515] p-4">
+      <section className="glass-panel rounded-[28px] p-4">
         <div className="flex flex-wrap gap-2">
           {SUB_TABS.map((item) => (
             <button
@@ -533,19 +533,19 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
               onClick={() => setActiveTab(item.key)}
               className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                 activeTab === item.key
-                  ? "bg-[#165DFF] text-white"
-                  : "border border-white/8 bg-[#111827] text-slate-300 hover:border-[#165DFF]/30 hover:bg-[#165DFF]/10"
+                  ? "bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_10px_24px_rgba(34,193,220,0.2)]"
+                  : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"
               }`}
             >
               <span>{item.label}</span>
-              <span className={`text-xs ${activeTab === item.key ? "text-white/70" : "text-slate-500"}`}>{item.short}</span>
+              <span className={`text-xs ${activeTab === item.key ? "text-white/70" : "text-[var(--color-text-soft)]"}`}>{item.short}</span>
             </button>
           ))}
         </div>
       </section>
 
-      {error ? <div className="rounded-2xl border border-[#F87272]/30 bg-[#F87272]/10 px-4 py-3 text-sm text-[#FFD6D6]">{error}</div> : null}
-      {status ? <div className="rounded-2xl border border-[#165DFF]/20 bg-[#165DFF]/10 px-4 py-3 text-sm text-slate-100">{status}</div> : null}
+      {error ? <div className="rounded-2xl border border-[rgba(240,107,116,0.22)] bg-[rgba(240,107,116,0.1)] px-4 py-3 text-sm text-[var(--color-danger)]">{error}</div> : null}
+      {status ? <div className="glass-panel rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)]">{status}</div> : null}
 
       {activeTab === "summary" ? (
         <div className="space-y-4">
@@ -555,7 +555,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
             description="从交易记录中汇总净投入、当前市值和浮动盈亏。当前阶段先把记账、持仓和概览跑通，再逐步补齐更细的收益分析。"
             actions={<AppButton onClick={() => setActiveTab("transactions")}>去录入交易</AppButton>}
           >
-            {loading ? <p className="text-sm text-slate-400">正在加载账户概览...</p> : <SummaryCards summary={summary} />}
+            {loading ? <p className="text-sm text-[var(--color-text-muted)]">正在加载账户概览...</p> : <SummaryCards summary={summary} />}
           </SectionShell>
 
           <SectionShell
@@ -565,10 +565,10 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
           >
             <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
               {availableOverview.map((item) => (
-                <div key={item.label} className="rounded-[24px] border border-white/8 bg-[#111827] px-5 py-4">
-                  <p className="text-sm text-slate-500">{item.label}</p>
-                  <p className="mt-3 break-all text-[1.75rem] font-semibold leading-tight text-white xl:text-[2rem]">{item.value}</p>
-                  <p className="mt-2 text-sm text-slate-400">{item.hint}</p>
+                <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+                  <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
+                  <p className="mt-3 break-all text-[1.75rem] font-semibold leading-tight text-[var(--color-text-strong)] xl:text-[2rem]">{item.value}</p>
+                  <p className="mt-2 text-sm text-[var(--color-text-muted)]">{item.hint}</p>
                 </div>
               ))}
             </div>
@@ -582,7 +582,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
           title="当前持仓"
           description="基于你的买入卖出流水，系统会按 A 股价格与股数计算当前持仓、成本和浮动盈亏。"
         >
-          {loading ? <p className="text-sm text-slate-400">正在加载持仓数据...</p> : <PositionsTable items={positions} />}
+          {loading ? <p className="text-sm text-[var(--color-text-muted)]">正在加载持仓数据...</p> : <PositionsTable items={positions} />}
         </SectionShell>
       ) : null}
 
@@ -596,83 +596,83 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
           >
             <form className="grid gap-4 xl:grid-cols-[repeat(5,minmax(0,1fr))] 2xl:grid-cols-[repeat(6,minmax(0,1fr))]" onSubmit={handleSubmit}>
               <label className="block">
-                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">股票代码</span>
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">股票代码</span>
                 <input
                   value={formState.symbol}
                   onChange={(event) => setFormState((current) => ({ ...current, symbol: event.target.value }))}
-                  className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                   placeholder="例如 002594"
                 />
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">买卖方向</span>
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">买卖方向</span>
                 <select
                   value={formState.tradeType}
                   onChange={(event) => setFormState((current) => ({ ...current, tradeType: event.target.value as "buy" | "sell" }))}
-                  className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                 >
                   <option value="buy">买入</option>
                   <option value="sell">卖出</option>
                 </select>
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">交易日期</span>
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">交易日期</span>
                 <input
                   type="date"
                   value={formState.tradeDate}
                   onChange={(event) => setFormState((current) => ({ ...current, tradeDate: event.target.value }))}
-                  className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                 />
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">成交价格</span>
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">成交价格</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={formState.price}
                   onChange={(event) => setFormState((current) => ({ ...current, price: event.target.value }))}
-                  className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                   placeholder="例如 234.50"
                 />
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">股数</span>
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">股数</span>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   value={formState.quantity}
                   onChange={(event) => setFormState((current) => ({ ...current, quantity: event.target.value }))}
-                  className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                   placeholder="例如 100"
                 />
               </label>
               <div className="xl:col-span-full">
-                <button type="button" onClick={() => setShowAdvanced((current) => !current)} className="text-sm text-[#36D399]">
+                <button type="button" onClick={() => setShowAdvanced((current) => !current)} className="text-sm font-medium text-[var(--color-primary)]">
                   {showAdvanced ? "收起高级设置" : "展开高级设置"}
                 </button>
               </div>
               {showAdvanced ? (
                 <>
                   <label className="block xl:col-span-1">
-                    <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">手续费</span>
+                    <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">手续费</span>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formState.fee}
                       onChange={(event) => setFormState((current) => ({ ...current, fee: event.target.value }))}
-                      className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                      className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                       placeholder="默认 0"
                     />
                   </label>
                   <label className="block xl:col-span-3 2xl:col-span-4">
-                    <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-slate-500">备注</span>
+                    <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">备注</span>
                     <input
                       value={formState.note}
                       onChange={(event) => setFormState((current) => ({ ...current, note: event.target.value }))}
-                      className="w-full rounded-2xl border border-white/8 bg-[#0b1220] px-4 py-3 text-sm text-white outline-none transition focus:border-[#165DFF]/50"
+                      className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
                       placeholder="例如 分批建仓、调仓减仓"
                     />
                   </label>
@@ -692,7 +692,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
             description="你录入的买入卖出记录会在这里展示，并作为持仓和账户概览的计算基础。"
           >
             {loading ? (
-              <p className="text-sm text-slate-400">正在加载交易记录...</p>
+              <p className="text-sm text-[var(--color-text-muted)]">正在加载交易记录...</p>
             ) : (
               <TransactionsTable
                 items={transactions}
@@ -712,7 +712,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
           title="收益分析"
           description="这里会集中展示账户曲线、仓位占比和当前持仓表现。后续还可以在这一页继续补组合净值、阶段回撤和收益归因。"
         >
-          {loading ? <p className="text-sm text-slate-400">正在加载收益分析...</p> : <PerformancePanel curve={curve} allocation={allocation} />}
+          {loading ? <p className="text-sm text-[var(--color-text-muted)]">正在加载收益分析...</p> : <PerformancePanel curve={curve} allocation={allocation} />}
         </SectionShell>
       ) : null}
     </div>

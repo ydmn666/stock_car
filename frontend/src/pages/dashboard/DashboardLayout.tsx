@@ -30,23 +30,23 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   const isAnalysisContext = !["portfolio", "history"].includes(props.activeTab);
 
   return (
-    <div className="app-aurora h-screen overflow-hidden text-white">
+    <div className="app-aurora h-screen overflow-hidden text-[var(--color-text)]">
       <div className="app-aurora__wave app-aurora__wave--left" />
       <div className="app-aurora__wave app-aurora__wave--right" />
       <div className="app-aurora__grid" />
-      <header className="border-b border-white/6 bg-[#0b1220]/85 backdrop-blur">
+      <header className="border-b border-[var(--color-border)] bg-[rgba(255,255,255,0.62)] backdrop-blur">
         <div className="mx-auto flex max-w-[1920px] items-center justify-between gap-6 px-4 py-4 xl:px-6">
           <div className="flex items-center gap-8">
-            <span className="text-2xl font-black tracking-tight text-[#165DFF]">动能智投</span>
-            <nav className="hidden gap-7 text-sm text-slate-500 xl:flex">
-              <span className="text-white">新能源汽车智能投研工作台</span>
+            <span className="text-2xl font-black tracking-tight text-[var(--color-primary)]">动能智投</span>
+            <nav className="hidden gap-7 text-sm text-[var(--color-text-muted)] xl:flex">
+              <span className="text-[var(--color-text-strong)]">新能源汽车智能投研工作台</span>
               <span>A 股深度分析</span>
               <span>AI 辅助问答</span>
               <span>个人投资模块预留</span>
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden rounded-full border border-white/8 px-3 py-2 text-xs text-slate-400 xl:inline-flex">{props.currentUser || "访客"} · {props.health === "ok" ? "系统在线" : "系统检测中"}</span>
+            <span className="glass-chip hidden rounded-full px-3 py-2 text-xs text-[var(--color-text-muted)] xl:inline-flex">{props.currentUser || "访客"} · {props.health === "ok" ? "系统在线" : "系统检测中"}</span>
             <AppButton variant="secondary" onClick={props.onBackToSetup}>重新配置</AppButton>
             {isAnalysisContext ? (
               <AppButton variant="secondary" onClick={() => void props.onExportPdf()} disabled={props.exportDisabled || props.exportLoading}>
@@ -63,9 +63,9 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           <div className="h-full overflow-y-auto overscroll-contain pr-1">
             <div className="space-y-2">
               {WORKSPACE_TABS.map((item) => (
-                <button key={item.key} type="button" onClick={() => props.onTabChange(item.key)} className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium transition ${props.activeTab === item.key ? "bg-[#165DFF] text-white" : "border border-white/8 bg-[#111827] text-slate-300 hover:border-[#165DFF]/30 hover:bg-[#165DFF]/10"}`}>
+                <button key={item.key} type="button" onClick={() => props.onTabChange(item.key)} className={`flex w-full items-center justify-between rounded-[22px] px-4 py-3 text-left text-sm font-medium transition ${props.activeTab === item.key ? "border border-[rgba(255,255,255,0.55)] bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_14px_30px_rgba(34,193,220,0.22)]" : "glass-panel text-[var(--color-text-strong)] hover:border-[color:var(--color-primary-border)] hover:bg-white/85"}`}>
                   <span>{item.label}</span>
-                  <span className={`text-xs ${props.activeTab === item.key ? "text-white/70" : "text-slate-500"}`}>{item.short}</span>
+                  <span className={`text-xs ${props.activeTab === item.key ? "text-white/80" : "text-[var(--color-text-soft)]"}`}>{item.short}</span>
                 </button>
               ))}
             </div>
@@ -89,8 +89,8 @@ export function DashboardLayout(props: DashboardLayoutProps) {
                 }
               />
             ) : null}
-            {isAnalysisContext && props.exportStatus ? <div className="rounded-2xl border border-[#165DFF]/20 bg-[#165DFF]/10 px-4 py-3 text-sm text-slate-100">{props.exportStatus}</div> : null}
-            {props.workspaceError ? <div className="rounded-2xl border border-[#F87272]/30 bg-[#F87272]/10 px-4 py-3 text-sm text-[#FFD6D6]">{props.workspaceError}</div> : null}
+            {isAnalysisContext && props.exportStatus ? <div className="glass-panel rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)]">{props.exportStatus}</div> : null}
+            {props.workspaceError ? <div className="rounded-2xl border border-[rgba(240,107,116,0.22)] bg-[rgba(240,107,116,0.1)] px-4 py-3 text-sm text-[var(--color-danger)]">{props.workspaceError}</div> : null}
             {isAnalysisContext ? <MetricStrip items={props.metricItems} /> : null}
             <section>{props.moduleContent}</section>
           </div>
