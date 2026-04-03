@@ -24,3 +24,6 @@ frontend/.env.production
 # Frontend dependencies / build
 frontend/node_modules/
 frontend/dist/
+
+# Local generated reports / storage
+storage/
