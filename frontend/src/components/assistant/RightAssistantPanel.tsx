@@ -79,18 +79,17 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
   }
 
   return (
-    <aside className="assistant-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] p-4">
-      <div className="shrink-0 border-b border-white/25 pb-3">
+    <aside className="assistant-panel flex h-[calc(100vh-121px)] min-h-0 max-h-full flex-col overflow-hidden rounded-[28px] p-4 2xl:h-[calc(100vh-128px)]">
+      <div className="shrink-0 border-b border-white/25 pb-2">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-white/75">右侧智能问答</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">AI 助手</h3>
+            <h3 className="text-2xl font-semibold text-white">AI 助手</h3>
           </div>
           <span className="rounded-full border border-white/28 bg-white/12 px-3 py-1 text-[11px] text-white">{currentUser || "访客模式"}</span>
         </div>
       </div>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-hidden">
+      <div className="mt-3 min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto overscroll-contain pr-1">
           <div className="flex min-h-full flex-col justify-end gap-3">
             {!messages.length ? (
@@ -108,7 +107,7 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-4 shrink-0 space-y-3 border-t border-white/22 pt-4">
+      <form onSubmit={handleSubmit} className="mt-3 shrink-0 space-y-2 border-t border-white/22 pt-3">
         <textarea
           ref={textareaRef}
           value={input}
@@ -118,23 +117,11 @@ export function RightAssistantPanel({ currentUser, context, prompts, onRequestPd
             resizeTextarea(value);
           }}
           rows={1}
-          className="min-h-[52px] w-full resize-none overflow-y-auto rounded-[20px] border border-white/28 bg-[rgba(255,255,255,0.22)] px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/75 focus:border-white/40"
+          className="min-h-[48px] w-full resize-none overflow-y-auto rounded-[20px] border border-white/28 bg-[rgba(255,255,255,0.22)] px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/75 focus:border-white/40"
           placeholder="填写问答，例：询问股票走势"
         />
-        <div className="flex items-center justify-between gap-3">
-          <div className="hidden flex-wrap gap-2 md:flex">
-            {prompts.slice(0, 2).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => void send(item)}
-                className="rounded-full border border-white/24 bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[11px] text-white/92 transition hover:bg-[rgba(255,255,255,0.18)]"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <button type="submit" className="inline-flex min-w-[120px] items-center justify-center rounded-2xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(34,193,220,0.24)] transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50" disabled={loading}>发送</button>
+        <div className="flex justify-end">
+          <button type="submit" className="inline-flex min-w-[114px] items-center justify-center rounded-2xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(34,193,220,0.24)] transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50" disabled={loading}>发送</button>
         </div>
       </form>
     </aside>

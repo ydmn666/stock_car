@@ -53,13 +53,13 @@ export function ChartCarousel({ title, eyebrow, items, emptyTitle, emptyDescript
             key={item.key}
             type="button"
             onClick={() => setActiveIndex(index)}
-            className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${index === activeIndex ? "bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_10px_24px_rgba(34,193,220,0.2)]" : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"}`}
+            className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${index === activeIndex ? "selected-chip" : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"}`}
           >
             {item.label}
           </button>
         ))}
       </div>
-      <div className="glass-panel mt-4 overflow-hidden rounded-[24px] p-2">{active.content}</div>
+      <div className="content-card mt-4 overflow-hidden rounded-[24px] p-2">{active.content}</div>
     </section>
   );
 }

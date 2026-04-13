@@ -19,7 +19,7 @@ function MetricCard(props: { label: string; value: string; hint: string; tone?: 
         : "text-[var(--color-text-strong)]";
 
   return (
-    <div className="glass-panel rounded-[24px] px-5 py-4">
+    <div className="data-card rounded-[24px] px-5 py-4">
       <p className="text-sm text-[var(--color-text-soft)]">{props.label}</p>
       <p className={`mt-3 break-all text-[1.65rem] font-semibold leading-tight xl:text-[1.85rem] ${toneClass}`}>{props.value}</p>
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">{props.hint}</p>
@@ -40,7 +40,7 @@ function ScenarioPanel(props: {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-      <div className="glass-panel rounded-[24px] p-5">
+      <div className="content-card rounded-[24px] p-5">
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">预测结论</p>
         <h4 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">{direction}</h4>
         <p className="mt-3 text-sm leading-7 text-[var(--color-text-muted)]">
@@ -54,7 +54,7 @@ function ScenarioPanel(props: {
         </div>
       </div>
 
-      <div className="glass-panel rounded-[24px] p-5">
+      <div className="content-card rounded-[24px] p-5">
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">风险提示</p>
         <h4 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">区间解释</h4>
         <div className="mt-4 space-y-3 text-sm leading-7 text-[var(--color-text-muted)]">
@@ -171,7 +171,7 @@ function RiskAssessmentPanel(props: {
 
       <div className="grid gap-4 xl:grid-cols-3">
         {cards.map((item) => (
-          <div key={item.title} className="glass-panel rounded-[24px] p-5">
+          <div key={item.title} className="content-card rounded-[24px] p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">{item.title}</p>
             <h4 className={`mt-3 text-3xl font-semibold ${item.tone}`}>{item.value}</h4>
             <p className="mt-4 text-sm leading-7 text-[var(--color-text-muted)]">{item.desc}</p>
@@ -179,7 +179,7 @@ function RiskAssessmentPanel(props: {
         ))}
       </div>
 
-      <div className="glass-panel rounded-[24px] p-5">
+      <div className="content-card rounded-[24px] p-5">
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">风险结论</p>
         <h4 className={`mt-2 text-2xl font-semibold ${overall.tone}`}>{overall.label}</h4>
         <div className="mt-4 space-y-3 text-sm leading-7 text-[var(--color-text-muted)]">

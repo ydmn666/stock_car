@@ -5,7 +5,7 @@
 :root {
   font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: #1f3a5a;
-  background: #f3fafd;
+  background: #deeff7;
   --color-primary: #22c1dc;
   --color-primary-hover: #16b3cf;
   --color-primary-active: #0fa4c2;
@@ -13,26 +13,31 @@
   --color-accent-soft: #7be3d2;
   --color-profit: #22cfa8;
   --color-risk: #f06b74;
-  --color-surface: #e8f6fb;
-  --color-highlight: #d7f0f7;
-  --color-panel: rgba(255, 255, 255, 0.82);
-  --color-panel-soft: rgba(255, 255, 255, 0.72);
+  --color-surface: #deeff7;
+  --color-highlight: #d3ebf5;
+  --color-panel: rgba(255, 255, 255, 0.9);
+  --color-panel-soft: rgba(255, 255, 255, 0.82);
+  --color-card: rgba(255, 255, 255, 0.84);
+  --color-card-strong: rgba(255, 255, 255, 0.94);
   --color-text: #1f3a5a;
   --color-text-strong: #17324d;
   --color-text-muted: #4e6a85;
   --color-text-soft: #6f879b;
-  --color-border: #d8ecf2;
-  --color-border-strong: rgba(34, 193, 220, 0.24);
-  --color-primary-soft: rgba(34, 193, 220, 0.14);
-  --color-primary-border: rgba(34, 193, 220, 0.3);
-  --color-shadow: 0 10px 30px rgba(80, 140, 170, 0.1);
+  --color-border: rgba(205, 226, 236, 0.92);
+  --color-border-strong: rgba(34, 193, 220, 0.28);
+  --color-primary-soft: rgba(34, 193, 220, 0.18);
+  --color-primary-border: rgba(34, 193, 220, 0.34);
+  --color-shadow: 0 10px 24px rgba(86, 129, 152, 0.07);
+  --color-shadow-soft: 0 6px 16px rgba(91, 133, 153, 0.05);
+  --color-selected: #d8f3fb;
+  --color-selected-strong: #cbeef8;
   --color-danger: #f06b74;
   --assistant-start: #5e9fca;
   --assistant-mid: #6cb8db;
   --assistant-end: #88d4ea;
-  --color-bg-start: #f3fafd;
-  --color-bg-mid: #e8f6fb;
-  --color-bg-end: #d7f0f7;
+  --color-bg-start: #deeff7;
+  --color-bg-mid: #deeff7;
+  --color-bg-end: #deeff7;
 }
 
 * {
@@ -40,35 +45,28 @@
 }
 
 html {
-  background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-mid) 46%, var(--color-bg-end) 100%);
+  background: var(--color-bg-start);
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(34, 193, 220, 0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(53, 208, 181, 0.12), transparent 24%),
-    linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-mid) 48%, var(--color-bg-end) 100%);
+  background: var(--color-bg-start);
   color: var(--color-text);
 }
 
 .app-aurora {
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(circle at top left, rgba(34, 193, 220, 0.2), transparent 24%),
-    radial-gradient(circle at top right, rgba(53, 208, 181, 0.14), transparent 20%),
-    radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.88), transparent 28%),
-    linear-gradient(180deg, #f3fafd 0%, #e8f6fb 52%, #d7f0f7 100%);
+  background: var(--color-bg-start);
 }
 
 .app-aurora__wave {
   position: absolute;
   z-index: -2;
-  filter: blur(18px);
-  opacity: 0.72;
+  filter: blur(36px);
+  opacity: 0.18;
   pointer-events: none;
 }
 
@@ -78,10 +76,9 @@ body {
   inset: 0;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 30% 50%, rgba(34, 193, 220, 0.2), transparent 46%),
-    radial-gradient(circle at 68% 45%, rgba(53, 208, 181, 0.14), transparent 42%),
-    linear-gradient(90deg, rgba(34, 193, 220, 0.16), rgba(123, 227, 210, 0.08), rgba(34, 193, 220, 0.14));
-  animation: auroraFloat 18s ease-in-out infinite alternate;
+    radial-gradient(circle at 30% 50%, rgba(34, 193, 220, 0.08), transparent 52%),
+    radial-gradient(circle at 68% 45%, rgba(53, 208, 181, 0.05), transparent 48%);
+  animation: auroraFloat 30s ease-in-out infinite alternate;
 }
 
 .app-aurora__wave--left {
@@ -101,12 +98,11 @@ body {
 }
 
 .app-aurora__wave--right::before {
-  animation-duration: 22s;
+  animation-duration: 34s;
   animation-delay: -4s;
   background:
-    radial-gradient(circle at 35% 45%, rgba(34, 193, 220, 0.18), transparent 44%),
-    radial-gradient(circle at 65% 55%, rgba(53, 208, 181, 0.14), transparent 44%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(34, 193, 220, 0.18), rgba(123, 227, 210, 0.08));
+    radial-gradient(circle at 35% 45%, rgba(34, 193, 220, 0.07), transparent 50%),
+    radial-gradient(circle at 65% 55%, rgba(53, 208, 181, 0.04), transparent 50%);
 }
 
 .app-aurora__grid {
@@ -114,7 +110,7 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.08;
+  opacity: 0;
   background-image:
     linear-gradient(rgba(31, 58, 90, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(31, 58, 90, 0.04) 1px, transparent 1px);
@@ -124,7 +120,7 @@ body {
 
 .glass-panel {
   background: var(--color-panel);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--color-border);
   box-shadow: var(--color-shadow);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -132,18 +128,54 @@ body {
 
 .glass-panel-soft {
   background: var(--color-panel-soft);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: var(--color-shadow);
+  border: 1px solid rgba(221, 238, 246, 0.9);
+  box-shadow: var(--color-shadow-soft);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 .glass-chip {
-  background: rgba(255, 255, 255, 0.62);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 252, 254, 0.78) 100%);
   border: 1px solid var(--color-border);
-  box-shadow: 0 6px 18px rgba(80, 140, 170, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 6px 18px rgba(80, 140, 170, 0.05);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+
+.selected-chip {
+  background: var(--color-selected);
+  border: 1px solid var(--color-primary-border);
+  color: var(--color-text-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 8px 18px rgba(34, 193, 220, 0.08);
+}
+
+.selected-card {
+  background: var(--color-selected-strong);
+  border: 1px solid var(--color-primary-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 10px 22px rgba(34, 193, 220, 0.08);
+}
+
+.data-card {
+  background: var(--color-card-strong);
+  border: 1px solid rgba(214, 231, 239, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 8px 22px rgba(80, 140, 170, 0.06);
+}
+
+.content-card {
+  background: var(--color-card);
+  border: 1px solid rgba(214, 231, 239, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 8px 20px rgba(80, 140, 170, 0.045);
 }
 
 .assistant-panel {

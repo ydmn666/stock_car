@@ -8,15 +8,15 @@ export function LandingFeatureGrid() {
           <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-soft)]">产品定位</p>
           <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-strong)]">平台核心价值</h3>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <div className="glass-panel rounded-[24px] p-5 transition hover:-translate-y-1 hover:border-[color:var(--color-primary-border)]">
+            <div className="content-card rounded-[24px] p-5 transition hover:border-[color:var(--color-primary-border)]">
               <p className="text-lg font-semibold text-[var(--color-text-strong)]">多市场统一分析</p>
               <p className="mt-3 text-sm leading-7 text-[var(--color-text-muted)]">将分散的股票来源做统一标准化处理，让前端专注展示，避免受单一数据接口波动影响。</p>
             </div>
-            <div className="glass-panel rounded-[24px] p-5 transition hover:-translate-y-1 hover:border-[color:var(--color-primary-border)]">
+            <div className="content-card rounded-[24px] p-5 transition hover:border-[color:var(--color-primary-border)]">
               <p className="text-lg font-semibold text-[var(--color-text-strong)]">通用 AI 智能助手</p>
               <p className="mt-3 text-sm leading-7 text-[var(--color-text-muted)]">不再拆成多个专用问答面板，而是通过一个右侧 AI 助手统一解释市场、资讯、报告与持仓变化。</p>
             </div>
-            <div className="rounded-[24px] border border-[rgba(53,208,181,0.25)] bg-[linear-gradient(135deg,rgba(53,208,181,0.18),rgba(123,227,210,0.16))] p-5 text-[var(--color-text-strong)] shadow-[0_10px_30px_rgba(80,140,170,0.1)] backdrop-blur-[16px]">
+            <div className="data-card rounded-[24px] p-5 text-[var(--color-text-strong)]">
               <p className="text-lg font-semibold">个人投资闭环</p>
               <p className="mt-3 text-sm leading-7 text-[var(--color-text-muted)]">从数据分析延伸到真实投资记录、成本投入、收益波动与资金管理，形成完整决策工作台。</p>
             </div>

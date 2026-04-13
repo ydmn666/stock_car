@@ -94,7 +94,7 @@ function SummaryCards(props: { summary: PortfolioSummary }) {
   return (
     <div className={`grid gap-3 lg:grid-cols-2 ${cards.length > 4 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
       {cards.map((item) => (
-        <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+        <div key={item.label} className="data-card rounded-[24px] px-5 py-4">
           <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
           <p className="mt-3 break-all text-[2rem] font-semibold leading-tight text-[var(--color-text-strong)] xl:text-[2.2rem]">{item.value}</p>
           <p className="mt-2 text-sm text-[var(--color-text-muted)]">{item.hint}</p>
@@ -223,7 +223,7 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
           },
           { label: isFlat ? "当前持仓成本" : "当前持仓成本", value: money(latestPoint.holding_cost), hint: isFlat ? "当前已无持仓，因此成本为 0" : "仍在持有仓位的成本" },
         ].map((item) => (
-          <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+          <div key={item.label} className="data-card rounded-[24px] px-5 py-4">
             <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
             <p className="mt-3 break-all text-[1.8rem] font-semibold leading-tight text-[var(--color-text-strong)]">{item.value}</p>
             <p className="mt-2 text-sm text-[var(--color-text-muted)]">{item.hint}</p>
@@ -232,7 +232,7 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-        <div className="glass-panel rounded-[24px] p-4">
+        <div className="content-card rounded-[24px] p-4">
           <div className="mb-4">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">收益分析</p>
             <h4 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">账户曲线</h4>
@@ -286,7 +286,7 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
           />
         </div>
 
-        <div className="glass-panel rounded-[24px] p-4">
+        <div className="content-card rounded-[24px] p-4">
           <div className="mb-4">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">收益分析</p>
             <h4 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">仓位占比</h4>
@@ -322,7 +322,7 @@ function PerformancePanel(props: { curve: PortfolioPerformancePoint[]; allocatio
         </div>
       </div>
 
-      <div className="glass-panel rounded-[24px] p-4">
+      <div className="content-card rounded-[24px] p-4">
         <div className="mb-4">
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-text-soft)]">收益分析</p>
           <h4 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">持仓表现拆解</h4>
@@ -533,12 +533,12 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
               onClick={() => setActiveTab(item.key)}
               className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                 activeTab === item.key
-                  ? "bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_10px_24px_rgba(34,193,220,0.2)]"
+                  ? "selected-chip"
                   : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"
               }`}
             >
               <span>{item.label}</span>
-              <span className={`text-xs ${activeTab === item.key ? "text-white/70" : "text-[var(--color-text-soft)]"}`}>{item.short}</span>
+              <span className={`text-xs ${activeTab === item.key ? "text-[var(--color-primary)]" : "text-[var(--color-text-soft)]"}`}>{item.short}</span>
             </button>
           ))}
         </div>
@@ -565,7 +565,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
           >
             <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
               {availableOverview.map((item) => (
-                <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+                <div key={item.label} className="data-card rounded-[24px] px-5 py-4">
                   <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
                   <p className="mt-3 break-all text-[1.75rem] font-semibold leading-tight text-[var(--color-text-strong)] xl:text-[2rem]">{item.value}</p>
                   <p className="mt-2 text-sm text-[var(--color-text-muted)]">{item.hint}</p>

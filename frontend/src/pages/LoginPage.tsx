@@ -39,11 +39,11 @@ export function LoginPage(props: LoginPageProps) {
               <h1 className="mt-3 text-5xl font-black leading-tight text-[var(--color-text-strong)]">面向新能源汽车赛道的智能投研入口</h1>
               <p className="mt-5 max-w-xl text-base leading-8 text-[var(--color-text-muted)]">当前平台聚焦股票分析、资讯舆情、趋势预测与后续个人投资管理模块。登录页尽量保持一屏完成，同时保留一点底部呼吸空间，让页面不显得过满。</p>
               <div className="mt-8 grid gap-4 md:grid-cols-2">
-                <div className="glass-panel rounded-[24px] p-5">
+                <div className="content-card rounded-[24px] p-5">
                   <p className="text-sm font-semibold text-[var(--color-text-strong)]">一屏优先登录</p>
                   <p className="mt-2 text-sm leading-7 text-[var(--color-text-muted)]">优先适配常见桌面屏幕，若高度不足则允许页内轻微滚动，避免按钮被截掉。</p>
                 </div>
-                <div className="glass-panel rounded-[24px] p-5">
+                <div className="content-card rounded-[24px] p-5">
                   <p className="text-sm font-semibold text-[var(--color-text-strong)]">工作台聚焦效率</p>
                   <p className="mt-2 text-sm leading-7 text-[var(--color-text-muted)]">后续核心工作台保持三栏固定布局，图表优先，AI 仅作为辅助区。</p>
                 </div>

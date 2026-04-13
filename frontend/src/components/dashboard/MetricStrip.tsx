@@ -14,9 +14,9 @@ export function MetricStrip({ items }: MetricStripProps) {
         const toneClass =
           item.tone === "green" ? "text-[var(--color-profit)]" : item.tone === "yellow" ? "text-[var(--color-risk)]" : "text-[var(--color-text-soft)]";
         return (
-          <div key={item.label} className="glass-panel rounded-[24px] px-5 py-4">
+          <div key={item.label} className="data-card rounded-[24px] px-5 py-4">
             <p className="text-sm text-[var(--color-text-soft)]">{item.label}</p>
-            <p className="mt-3 text-3xl font-semibold text-[var(--color-text-strong)]">{item.value}</p>
+            <p className="mt-3 text-[2.1rem] font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">{item.value}</p>
             {item.hint ? <p className={`mt-2 text-sm ${toneClass}`}>{item.hint}</p> : null}
           </div>
         );

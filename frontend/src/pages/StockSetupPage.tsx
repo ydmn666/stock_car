@@ -67,7 +67,7 @@ export function StockSetupPage(props: StockSetupPageProps) {
                   key={item.key}
                   type="button"
                   onClick={() => props.onMarketChange(item.key)}
-                  className={`rounded-[24px] border px-5 py-5 text-left transition ${props.market === item.key ? "border-[color:var(--color-primary-border)] bg-[linear-gradient(135deg,rgba(34,193,220,0.16),rgba(53,208,181,0.14))] shadow-[0_10px_24px_rgba(34,193,220,0.12)]" : "glass-panel hover:bg-white/85"}`}
+                  className={`rounded-[24px] border px-5 py-5 text-left transition ${props.market === item.key ? "selected-card" : "glass-panel hover:bg-white/85"}`}
                 >
                   <div className="text-lg font-semibold text-[var(--color-text-strong)]">{item.label}</div>
                   <p className="mt-2 text-sm leading-7 text-[var(--color-text-muted)]">{item.hint}</p>
@@ -94,7 +94,7 @@ export function StockSetupPage(props: StockSetupPageProps) {
                           key={stock.id}
                           type="button"
                           onClick={() => props.onAddStock(stock)}
-                          className={`rounded-full px-4 py-2 text-sm transition ${selected ? "bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_10px_22px_rgba(34,193,220,0.18)]" : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"}`}
+                          className={`rounded-full px-4 py-2 text-sm transition ${selected ? "selected-chip font-semibold" : "glass-chip text-[var(--color-text-muted)] hover:bg-white/85"}`}
                         >
                           {stock.display_name}
                         </button>
@@ -108,7 +108,7 @@ export function StockSetupPage(props: StockSetupPageProps) {
                       value={props.manualCode}
                       onChange={(event) => props.onManualCodeChange(event.target.value)}
                       placeholder="输入 A 股代码，例如 002594 / 300750"
-                      className="min-w-0 flex-1 rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.68)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)]"
+                      className="data-card min-w-0 flex-1 rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white"
                     />
                     <AppButton variant="secondary" onClick={props.onAddManualStock}>添加</AppButton>
                   </div>
@@ -117,7 +117,7 @@ export function StockSetupPage(props: StockSetupPageProps) {
                   <div className="mt-4 max-h-[360px] overflow-y-auto pr-1">
                     <div className="grid gap-3 md:grid-cols-2">
                       {props.selectedStocks.map((stock) => (
-                        <div key={stock.id} className={`rounded-[24px] border px-4 py-4 transition ${stock.id === props.activeCode ? "border-[color:var(--color-primary-border)] bg-[linear-gradient(135deg,rgba(34,193,220,0.16),rgba(53,208,181,0.12))]" : "glass-panel"}`}>
+                        <div key={stock.id} className={`rounded-[24px] border px-4 py-4 transition ${stock.id === props.activeCode ? "selected-card" : "content-card"}`}>
                           <button type="button" className="w-full text-left" onClick={() => props.onSetActiveCode(stock.id)}>
                             <div className="font-medium text-[var(--color-text-strong)]">{stock.display_name}</div>
                             <div className="mt-1 text-xs text-[var(--color-text-soft)]">{stock.full_symbol}</div>
@@ -137,21 +137,21 @@ export function StockSetupPage(props: StockSetupPageProps) {
                 <div className="mt-5 space-y-4">
                   <label className="block">
                     <span className="mb-2 block text-xs text-[var(--color-text-muted)]">开始日期</span>
-                    <input type="date" value={props.startDate} onChange={(event) => props.onStartDateChange(event.target.value)} className="w-full rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.68)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)]" />
+                    <input type="date" value={props.startDate} onChange={(event) => props.onStartDateChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white" />
                   </label>
                   <label className="block">
                     <span className="mb-2 block text-xs text-[var(--color-text-muted)]">结束日期</span>
-                    <input type="date" value={props.endDate} onChange={(event) => props.onEndDateChange(event.target.value)} className="w-full rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.68)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)]" />
+                    <input type="date" value={props.endDate} onChange={(event) => props.onEndDateChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white" />
                   </label>
                 </div>
 
-                <div className="glass-panel rounded-[24px] mt-5 p-4">
+                <div className="data-card rounded-[24px] mt-5 p-4">
                   <div className="text-sm text-[var(--color-text-muted)]">当前主标的</div>
                   <div className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">{props.selectedStocks.find((item) => item.id === props.activeCode)?.display_name ?? "尚未设置"}</div>
                   <div className="mt-1 text-sm text-[var(--color-text-muted)]">{props.selectedStocks.find((item) => item.id === props.activeCode)?.full_symbol ?? "请先选择股票"}</div>
                 </div>
 
-                <div className="glass-panel rounded-[24px] mt-4 p-4">
+                <div className="content-card rounded-[24px] mt-4 p-4">
                   <div className="text-sm text-[var(--color-text-muted)]">进入工作台后可查看</div>
                   <ul className="mt-3 space-y-2 text-sm leading-7 text-[var(--color-text-muted)]">
                     <li>总览与多股票收益对比</li>

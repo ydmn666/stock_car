@@ -58,14 +58,14 @@ export function DashboardLayout(props: DashboardLayoutProps) {
         </div>
       </header>
 
-      <div className="relative mx-auto grid h-[calc(100vh-73px)] max-w-[1920px] gap-4 overflow-hidden px-4 py-4 xl:grid-cols-[170px_minmax(0,1fr)_390px] 2xl:grid-cols-[190px_minmax(0,1fr)_430px] xl:px-6 xl:py-5">
+      <div className="relative mx-auto grid h-[calc(100vh-73px)] max-w-[1920px] gap-4 overflow-hidden px-4 py-4 xl:grid-cols-[170px_minmax(0,1fr)_380px] 2xl:grid-cols-[190px_minmax(0,1fr)_410px] xl:px-6 xl:py-5">
         <aside className="hidden h-full min-h-0 xl:block">
           <div className="h-full overflow-y-auto overscroll-contain pr-1">
             <div className="space-y-2">
               {WORKSPACE_TABS.map((item) => (
-                <button key={item.key} type="button" onClick={() => props.onTabChange(item.key)} className={`flex w-full items-center justify-between rounded-[22px] px-4 py-3 text-left text-sm font-medium transition ${props.activeTab === item.key ? "border border-[rgba(255,255,255,0.55)] bg-[linear-gradient(135deg,var(--color-primary),var(--color-accent))] text-white shadow-[0_14px_30px_rgba(34,193,220,0.22)]" : "glass-panel text-[var(--color-text-strong)] hover:border-[color:var(--color-primary-border)] hover:bg-white/85"}`}>
+                <button key={item.key} type="button" onClick={() => props.onTabChange(item.key)} className={`flex w-full items-center justify-between rounded-[22px] px-4 py-3 text-left text-sm font-medium transition ${props.activeTab === item.key ? "selected-card text-[var(--color-text-strong)]" : "glass-panel text-[var(--color-text-strong)] hover:border-[color:var(--color-primary-border)] hover:bg-white/85"}`}>
                   <span>{item.label}</span>
-                  <span className={`text-xs ${props.activeTab === item.key ? "text-white/80" : "text-[var(--color-text-soft)]"}`}>{item.short}</span>
+                  <span className={`text-xs ${props.activeTab === item.key ? "text-[var(--color-primary)]" : "text-[var(--color-text-soft)]"}`}>{item.short}</span>
                 </button>
               ))}
             </div>
@@ -97,12 +97,14 @@ export function DashboardLayout(props: DashboardLayoutProps) {
         </main>
 
         <aside className="hidden h-full min-h-0 xl:block">
-          <RightAssistantPanel
-            currentUser={props.currentUser}
-            context={props.assistantContext}
-            prompts={["总结当前股票的走势特点", "解释这段时间收益变化原因", "基于新闻给出一个风险提示", "帮我概括当前页面重点"]}
-            onRequestPdf={props.onExportPdf}
-          />
+          <div className="sticky top-0 flex h-full max-h-full items-start pt-0 pb-3">
+            <RightAssistantPanel
+              currentUser={props.currentUser}
+              context={props.assistantContext}
+              prompts={["总结当前股票的走势特点", "解释这段时间收益变化原因", "基于新闻给出一个风险提示", "帮我概括当前页面重点"]}
+              onRequestPdf={props.onExportPdf}
+            />
+          </div>
         </aside>
       </div>
     </div>

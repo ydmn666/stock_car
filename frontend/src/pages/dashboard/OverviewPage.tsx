@@ -13,9 +13,9 @@ type OverviewPageProps = {
 
 function StatCard(props: { label: string; value: string; hint?: string }) {
   return (
-    <div className="glass-panel rounded-[24px] px-5 py-4">
+    <div className="data-card rounded-[24px] px-5 py-4">
       <p className="text-sm text-[var(--color-text-soft)]">{props.label}</p>
-      <p className="mt-3 text-2xl font-semibold text-[var(--color-text-strong)]">{props.value}</p>
+      <p className="mt-3 text-[2rem] font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">{props.value}</p>
       {props.hint ? <p className="mt-2 text-sm text-[var(--color-text-muted)]">{props.hint}</p> : null}
     </div>
   );
@@ -64,7 +64,7 @@ export function OverviewPage({ ready, activeStock, comparisonSeries, activeNews,
           </div>
           <div className="space-y-3">
             {activeNews.slice(0, 4).map((item) => (
-              <div key={item.id} className="glass-panel rounded-2xl px-4 py-4">
+              <div key={item.id} className="content-card rounded-2xl px-4 py-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">{getNewsTime(item)}</div>
                 <div className="mt-2 text-sm leading-7 text-[var(--color-text)]">{getNewsTitle(item)}</div>
               </div>

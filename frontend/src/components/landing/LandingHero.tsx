@@ -12,7 +12,7 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
     <section className="glass-panel-soft overflow-hidden rounded-[34px] px-7 py-10 lg:px-10 lg:py-12">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <RevealSection className="space-y-8" delayMs={60}>
-          <div className="inline-flex rounded-full border border-[rgba(53,208,181,0.28)] bg-[rgba(53,208,181,0.12)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
+          <div className="inline-flex rounded-full border border-[rgba(53,208,181,0.22)] bg-[rgba(53,208,181,0.08)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
             新能源 A 股智能分析平台
           </div>
           <div className="max-w-4xl">
@@ -37,10 +37,10 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
               ["输出形态", "图表 / 报告 / 问答", "支持 PDF 导出与智能解释"],
             ].map(([label, value, hint], index) => (
               <RevealSection key={label} delayMs={160 + index * 70}>
-                <div className="glass-panel rounded-[24px] px-5 py-4">
+                <div className="data-card rounded-[24px] px-5 py-4">
                   <p className="text-sm text-[var(--color-text-soft)]">{label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-[var(--color-text-strong)]">{value}</p>
-                  <p className={`mt-2 text-sm ${index !== 1 ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)]"}`}>{hint}</p>
+                  <p className="mt-3 text-[2rem] font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">{value}</p>
+                  <p className={`mt-2 text-sm ${index !== 1 ? "text-[var(--color-text-soft)]" : "text-[var(--color-text-muted)]"}`}>{hint}</p>
                 </div>
               </RevealSection>
             ))}
@@ -54,7 +54,7 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
                 <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-text-soft)]">实时观察</p>
                 <h3 className="mt-2 text-xl font-semibold text-[var(--color-text-strong)]">新能源热点行情</h3>
               </div>
-              <span className="rounded-full bg-[rgba(53,208,181,0.14)] px-3 py-1 text-xs text-[var(--color-accent)]">{health === "ok" ? "系统在线" : "状态检测中"}</span>
+              <span className="rounded-full border border-[rgba(53,208,181,0.18)] bg-[rgba(53,208,181,0.08)] px-3 py-1 text-xs text-[var(--color-accent)]">{health === "ok" ? "系统在线" : "状态检测中"}</span>
             </div>
             <div className="mt-5 space-y-3">
               {[
@@ -62,7 +62,7 @@ export function LandingHero({ health, onLogin, onExplore }: LandingHeroProps) {
                 ["宁德时代", "300750.SZ", "￥265.40", "+2.11%"],
                 ["长安汽车", "000625.SZ", "￥16.82", "-0.45%"],
               ].map(([name, code, price, change]) => (
-                <div key={code} className="glass-panel flex items-center justify-between rounded-2xl px-4 py-4 transition hover:-translate-y-0.5 hover:border-[color:var(--color-primary-border)]">
+                <div key={code} className="data-card flex items-center justify-between rounded-2xl px-4 py-4 transition hover:border-[color:var(--color-primary-border)]">
                   <div>
                     <p className="font-semibold text-[var(--color-text-strong)]">{name}</p>
                     <p className="mt-1 text-xs text-[var(--color-text-soft)]">{code}</p>

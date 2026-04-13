@@ -8,7 +8,7 @@ type LandingCTAProps = {
 export function LandingCTA({ onLogin }: LandingCTAProps) {
   return (
     <RevealSection delayMs={80}>
-      <section className="glass-panel rounded-[30px] px-8 py-12 text-center">
+      <section className="glass-panel-soft rounded-[30px] px-8 py-12 text-center">
         <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-text-soft)]">准备开始</p>
         <h3 className="mt-3 text-4xl font-black text-[var(--color-text-strong)] md:text-5xl">开始你的新能源汽车智能投研流程</h3>
         <p className="mx-auto mt-4 max-w-3xl text-base leading-8 text-[var(--color-text-muted)]">
