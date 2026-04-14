@@ -27,3 +27,8 @@ frontend/dist/
 
 # Local generated reports / storage
 storage/
+
+# Thesis helper assets
+thesis_diagrams/
+tools/generate_thesis_diagrams.py
+tools/generate_thesis_draft.py

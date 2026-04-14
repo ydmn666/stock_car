@@ -7,11 +7,13 @@ type LoginPageProps = {
   mode: "login" | "register";
   username: string;
   password: string;
+  confirmPassword: string;
   error: string;
   onBack: () => void;
   onModeChange: (mode: "login" | "register") => void;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
@@ -56,10 +58,12 @@ export function LoginPage(props: LoginPageProps) {
               mode={props.mode}
               username={props.username}
               password={props.password}
+              confirmPassword={props.confirmPassword}
               error={props.error}
               onModeChange={props.onModeChange}
               onUsernameChange={props.onUsernameChange}
               onPasswordChange={props.onPasswordChange}
+              onConfirmPasswordChange={props.onConfirmPasswordChange}
               onSubmit={props.onSubmit}
             />
           </RevealSection>

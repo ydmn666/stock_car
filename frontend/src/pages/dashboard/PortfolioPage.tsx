@@ -3,6 +3,7 @@ import Plot from "react-plotly.js";
 import { AppButton } from "../../components/common/AppButton";
 import { EmptyStatePanel } from "../../components/dashboard/EmptyStatePanel";
 import {
+  changePassword,
   createPortfolioTransaction,
   deletePortfolioTransaction,
   getPortfolioPerformance,
@@ -374,6 +375,14 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordStatus, setPasswordStatus] = useState("");
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [formState, setFormState] = useState({
     symbol: "",
     tradeType: "buy" as "buy" | "sell",
@@ -428,10 +437,10 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
     setError("");
     try {
       const [nextSummary, nextPositions, nextTransactions, nextPerformance] = await Promise.all([
-        getPortfolioSummary(currentUser),
-        getPortfolioPositions(currentUser),
-        getPortfolioTransactions(currentUser),
-        getPortfolioPerformance(currentUser),
+        getPortfolioSummary(),
+        getPortfolioPositions(),
+        getPortfolioTransactions(),
+        getPortfolioPerformance(),
       ]);
       setSummary(nextSummary);
       setPositions(nextPositions);
@@ -449,6 +458,40 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
     void loadPortfolio();
   }, [currentUser]);
 
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordStatus("");
+
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("请完整填写当前密码、新密码和确认密码。");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("两次输入的新密码不一致。");
+      return;
+    }
+    if (passwordForm.newPassword.length < 6 || passwordForm.newPassword.length > 20) {
+      setPasswordError("新密码长度需为 6-20 位。");
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      const result = await changePassword(passwordForm.oldPassword, passwordForm.newPassword);
+      setPasswordStatus(result.message || "密码修改成功。");
+      setPasswordForm({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (nextError) {
+      setPasswordError(nextError instanceof Error ? nextError.message : "密码修改失败。");
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -459,10 +502,9 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
       return;
     }
 
-    try {
+      try {
       setSaving(true);
       const payload = {
-        username: currentUser,
         symbol: formState.symbol.trim(),
         trade_type: formState.tradeType,
         trade_date: formState.tradeDate,
@@ -472,7 +514,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
         note: formState.note.trim() || undefined,
       };
       if (editingTransactionId != null) {
-        await updatePortfolioTransaction(currentUser, editingTransactionId, payload);
+        await updatePortfolioTransaction(editingTransactionId, payload);
         setStatus("交易记录已更新。");
       } else {
         await createPortfolioTransaction(payload);
@@ -492,7 +534,7 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
     try {
       setDeletingId(transactionId);
       setError("");
-      await deletePortfolioTransaction(currentUser, transactionId);
+      await deletePortfolioTransaction(transactionId);
       if (editingTransactionId === transactionId) {
         resetForm();
       }
@@ -572,6 +614,56 @@ export function PortfolioPage({ currentUser }: PortfolioPageProps) {
                 </div>
               ))}
             </div>
+          </SectionShell>
+
+          <SectionShell
+            eyebrow="账户安全"
+            title="修改登录密码"
+            description="已登录后可在这里完成基础版修改密码。需要先验证当前密码，再设置新的登录密码。"
+          >
+            <form className="grid gap-4 xl:grid-cols-3" onSubmit={handlePasswordSubmit}>
+              <label className="block">
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">当前密码</span>
+                <input
+                  type="password"
+                  value={passwordForm.oldPassword}
+                  maxLength={32}
+                  onChange={(event) => setPasswordForm((current) => ({ ...current, oldPassword: event.target.value }))}
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
+                  placeholder="请输入当前密码"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">新密码</span>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  maxLength={32}
+                  onChange={(event) => setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))}
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
+                  placeholder="6-20 位即可"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">确认新密码</span>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  maxLength={32}
+                  onChange={(event) => setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                  className="glass-chip w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white/85"
+                  placeholder="请再次输入新密码"
+                />
+              </label>
+              <div className="xl:col-span-full flex flex-wrap items-center justify-between gap-3">
+                <div className="text-sm text-[var(--color-text-muted)]">新密码长度 6-20 位，不额外限制字符类型。</div>
+                <AppButton type="submit" disabled={passwordSaving}>
+                  {passwordSaving ? "正在修改..." : "确认修改密码"}
+                </AppButton>
+              </div>
+              {passwordError ? <p className="xl:col-span-full text-sm text-[var(--color-danger)]">{passwordError}</p> : null}
+              {passwordStatus ? <p className="xl:col-span-full text-sm text-[var(--color-text-strong)]">{passwordStatus}</p> : null}
+            </form>
           </SectionShell>
         </div>
       ) : null}

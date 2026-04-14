@@ -5,10 +5,12 @@ type AuthCardProps = {
   mode: "login" | "register";
   username: string;
   password: string;
+  confirmPassword: string;
   error: string;
   onModeChange: (mode: "login" | "register") => void;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
@@ -37,12 +39,20 @@ export function AuthCard(props: AuthCardProps) {
       <form className="mt-6 space-y-4" onSubmit={props.onSubmit}>
         <label className="block">
           <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">用户名</span>
-          <input value={props.username} onChange={(event) => props.onUsernameChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white xl:text-base" placeholder="请输入登录用户名" />
+          <input value={props.username} maxLength={20} onChange={(event) => props.onUsernameChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white xl:text-base" placeholder="4-20 位，数字/字母/符号均可" />
+          <p className="mt-2 text-xs text-[var(--color-text-soft)]">用户名长度 4-20 位，支持数字、字母和常见符号，但不能包含空格。</p>
         </label>
         <label className="block">
           <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">密码</span>
-          <input type="password" value={props.password} onChange={(event) => props.onPasswordChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white xl:text-base" placeholder="请输入密码" />
+          <input type="password" value={props.password} maxLength={20} onChange={(event) => props.onPasswordChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white xl:text-base" placeholder="6-20 位即可" />
+          <p className="mt-2 text-xs text-[var(--color-text-soft)]">密码长度 6-20 位，不额外限制字符类型。</p>
         </label>
+        {props.mode === "register" ? (
+          <label className="block">
+            <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">确认密码</span>
+            <input type="password" value={props.confirmPassword} maxLength={20} onChange={(event) => props.onConfirmPasswordChange(event.target.value)} className="data-card w-full rounded-2xl px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none transition focus:border-[color:var(--color-primary-border)] focus:bg-white xl:text-base" placeholder="请再次输入密码" />
+          </label>
+        ) : null}
         {props.error ? <p className="text-sm text-[var(--color-danger)]">{props.error}</p> : null}
         <AppButton type="submit" className="w-full py-3.5 text-base">{props.mode === "login" ? "进入核心工作台" : "创建并继续"}</AppButton>
       </form>

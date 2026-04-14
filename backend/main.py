@@ -5,13 +5,14 @@ disable_proxy_env()
 from datetime import datetime
 import traceback
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from backend.schemas import (
     AgentRequest,
     ChatRequest,
+    ChangePasswordRequest,
     CreateTransactionRequest,
     ForecastRequest,
     LogHistoryRequest,
@@ -27,12 +28,14 @@ from backend.agents.stock_agent import run_agent_with_actions, stream_agent
 from backend.serialization import dataframe_to_records, records_to_dataframe
 from backend.services.ai_service import respond_chat, stream_chat
 from backend.services.auth_service import (
+    change_password,
     delete_all_user_history,
     delete_history_item,
     get_user_history,
     log_history,
     login_user,
     register_user,
+    verify_access_token,
 )
 from backend.services.forecast_service import generate_forecast
 from backend.services.market_service import get_instrument_payload, get_news_payload, get_price_history_payload, get_stock_name, init_db
@@ -59,8 +62,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. 椤烘墜鍔犱竴涓€滄闂ㄢ€濓紝鏀惧湪 @app.on_event("startup") 涓嬫柟鍗冲彲
-# 杩欎釜鏄负浜嗛槻姝綘鐩存帴璁块棶閾炬帴鏃剁湅鍒版伡浜虹殑 {"detail":"Not Found"}
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "后端服务已启动。"}
@@ -75,6 +76,20 @@ def on_startup():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+def get_current_username(authorization: str | None = Header(default=None)) -> str:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="请先登录。")
+
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(status_code=401, detail="登录状态无效，请重新登录。")
+
+    try:
+        return verify_access_token(token)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
 
 
 @app.get("/stocks/name/{symbol}")
@@ -129,29 +144,48 @@ def auth_register(payload: RegisterRequest):
 
 @app.post("/auth/login")
 def auth_login(payload: LoginRequest):
-    return {"success": login_user(payload.username, payload.password)}
+    success, token = login_user(payload.username, payload.password)
+    if not success or not token:
+        return {"success": False}
+    return {
+        "success": True,
+        "token": token,
+        "username": payload.username,
+    }
 
 
-@app.get("/users/{username}/history")
-def user_history(username: str):
-    return {"items": get_user_history(username)}
+@app.post("/auth/change-password")
+def auth_change_password(
+    payload: ChangePasswordRequest,
+    current_username: str = Depends(get_current_username),
+):
+    try:
+        change_password(current_username, payload.old_password, payload.new_password)
+        return {"success": True, "message": "密码修改成功，请使用新密码继续登录。"}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/users/me/history")
+def user_history(current_username: str = Depends(get_current_username)):
+    return {"items": get_user_history(current_username)}
 
 
 @app.post("/users/history/log")
-def user_history_log(payload: LogHistoryRequest):
-    log_history(payload.username, payload.stock_name, payload.stock_code)
+def user_history_log(payload: LogHistoryRequest, current_username: str = Depends(get_current_username)):
+    log_history(current_username, payload.stock_name, payload.stock_code)
     return JSONResponse({"success": True})
 
 
 @app.delete("/users/history/{item_id}")
-def user_history_delete(item_id: int):
-    delete_history_item(item_id)
+def user_history_delete(item_id: int, current_username: str = Depends(get_current_username)):
+    delete_history_item(current_username, item_id)
     return JSONResponse({"success": True})
 
 
-@app.delete("/users/{username}/history")
-def user_history_clear(username: str):
-    delete_all_user_history(username)
+@app.delete("/users/me/history")
+def user_history_clear(current_username: str = Depends(get_current_username)):
+    delete_all_user_history(current_username)
     return JSONResponse({"success": True})
 
 
@@ -165,43 +199,43 @@ def forecast(payload: ForecastRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@app.get("/portfolio/{username}/summary")
-def portfolio_summary(username: str):
+@app.get("/portfolio/me/summary")
+def portfolio_summary(current_username: str = Depends(get_current_username)):
     try:
-        return get_portfolio_summary(username)
+        return get_portfolio_summary(current_username)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.get("/portfolio/{username}/positions")
-def portfolio_positions(username: str):
+@app.get("/portfolio/me/positions")
+def portfolio_positions(current_username: str = Depends(get_current_username)):
     try:
-        return {"items": get_positions(username)}
+        return {"items": get_positions(current_username)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.get("/portfolio/{username}/performance")
-def portfolio_performance(username: str):
+@app.get("/portfolio/me/performance")
+def portfolio_performance(current_username: str = Depends(get_current_username)):
     try:
-        return get_portfolio_performance(username)
+        return get_portfolio_performance(current_username)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.get("/portfolio/{username}/transactions")
-def portfolio_transactions(username: str):
+@app.get("/portfolio/me/transactions")
+def portfolio_transactions(current_username: str = Depends(get_current_username)):
     try:
-        return {"items": list_transactions(username)}
+        return {"items": list_transactions(current_username)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/portfolio/transactions")
-def portfolio_transaction_create(payload: CreateTransactionRequest):
+def portfolio_transaction_create(payload: CreateTransactionRequest, current_username: str = Depends(get_current_username)):
     try:
         return create_transaction(
-            username=payload.username,
+            username=current_username,
             symbol=payload.symbol,
             trade_type=payload.trade_type,
             trade_date=datetime.strptime(payload.trade_date, "%Y-%m-%d").date(),
@@ -214,22 +248,24 @@ def portfolio_transaction_create(payload: CreateTransactionRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.delete("/portfolio/{username}/transactions/{transaction_id}")
-def portfolio_transaction_delete(username: str, transaction_id: int):
+@app.delete("/portfolio/transactions/{transaction_id}")
+def portfolio_transaction_delete(transaction_id: int, current_username: str = Depends(get_current_username)):
     try:
-        delete_transaction(username, transaction_id)
+        delete_transaction(current_username, transaction_id)
         return {"success": True}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.put("/portfolio/{username}/transactions/{transaction_id}")
-def portfolio_transaction_update(username: str, transaction_id: int, payload: UpdateTransactionRequest):
-    if payload.username != username:
-        raise HTTPException(status_code=400, detail="请求用户与路径用户不一致。")
+@app.put("/portfolio/transactions/{transaction_id}")
+def portfolio_transaction_update(
+    transaction_id: int,
+    payload: UpdateTransactionRequest,
+    current_username: str = Depends(get_current_username),
+):
     try:
         return update_transaction(
-            username=payload.username,
+            username=current_username,
             transaction_id=transaction_id,
             symbol=payload.symbol,
             trade_type=payload.trade_type,

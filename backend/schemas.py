@@ -1,10 +1,29 @@
 ﻿from __future__ import annotations
 
+import re
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 MarketType = Literal["CN"]
+USERNAME_PATTERN = re.compile(r"^\S{4,20}$")
+
+
+def normalize_username(value: str) -> str:
+    return value.strip()
+
+
+def validate_username(value: str) -> str:
+    normalized = normalize_username(value)
+    if not USERNAME_PATTERN.fullmatch(normalized):
+        raise ValueError("用户名需为 4-20 位，且不能包含空格。")
+    return normalized
+
+
+def validate_password(value: str) -> str:
+    if len(value) < 6 or len(value) > 20:
+        raise ValueError("密码长度需为 6-20 位。")
+    return value
 
 
 class ResolveInstrumentRequest(BaseModel):
@@ -32,14 +51,50 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
 
+    @field_validator("username")
+    @classmethod
+    def _validate_username(cls, value: str) -> str:
+        return validate_username(value)
+
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        return validate_password(value)
+
 
 class LoginRequest(BaseModel):
     username: str
     password: str
 
+    @field_validator("username")
+    @classmethod
+    def _validate_username(cls, value: str) -> str:
+        return validate_username(value)
+
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        return validate_password(value)
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+    @field_validator("old_password")
+    @classmethod
+    def _validate_old_password(cls, value: str) -> str:
+        if not value:
+            raise ValueError("请输入当前密码。")
+        return value
+
+    @field_validator("new_password")
+    @classmethod
+    def _validate_new_password(cls, value: str) -> str:
+        return validate_password(value)
+
 
 class LogHistoryRequest(BaseModel):
-    username: str
     stock_name: str
     stock_code: str
 
@@ -73,7 +128,6 @@ class ReportRequest(BaseModel):
 
 
 class CreateTransactionRequest(BaseModel):
-    username: str
     symbol: str
     trade_type: Literal["buy", "sell"]
     trade_date: str
@@ -84,7 +138,6 @@ class CreateTransactionRequest(BaseModel):
 
 
 class UpdateTransactionRequest(BaseModel):
-    username: str
     symbol: str
     trade_type: Literal["buy", "sell"]
     trade_date: str

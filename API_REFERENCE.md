@@ -1,205 +1,272 @@
-# stock_car v4 API Reference
+# stock_car API Reference
 
-Base URL default: `http://127.0.0.1:8000`
+Base URL 默认值：`http://127.0.0.1:8000`
 
 ## Health
 
 `GET /health`
 
-返回后端存活状态。
-
-## Stock
-
-`GET /stocks/name/{symbol}`
-
-返回股票名称。
-
-`POST /stocks/data`
-
-请求：
+返回后端服务状态：
 
 ```json
 {
-  "symbol": "002594",
-  "start_date": "2025-03-01",
-  "end_date": "2026-03-10"
+  "status": "ok"
 }
 ```
 
-返回：
+## Auth
+
+### 注册
+
+`POST /auth/register`
+
+请求体：
 
 ```json
 {
-  "records": [
-    {
-      "日期": "2026-03-10 00:00:00",
-      "收盘": 123.45
-    }
-  ]
+  "username": "demo_user",
+  "password": "123456"
 }
 ```
 
 说明：
 
-- 后端优先从数据库读取
-- 数据缺失时自动联网补全
-- 补全后写回数据库
+- 用户名长度 4-20 位，不能包含空格
+- 密码长度 6-20 位
 
-`POST /stocks/news`
+### 登录
 
-请求：
+`POST /auth/login`
+
+请求体：
+
+```json
+{
+  "username": "demo_user",
+  "password": "123456"
+}
+```
+
+返回示例：
+
+```json
+{
+  "success": true,
+  "token": "xxxx.yyyy",
+  "username": "demo_user"
+}
+```
+
+### 修改密码
+
+`POST /auth/change-password`
+
+请求头：
+
+```text
+Authorization: Bearer <token>
+```
+
+请求体：
+
+```json
+{
+  "old_password": "123456",
+  "new_password": "654321"
+}
+```
+
+## Stock
+
+### 获取股票名称
+
+`GET /stocks/name/{symbol}`
+
+示例：
+
+`GET /stocks/name/002594?market=CN`
+
+### 解析股票标的
+
+`POST /instruments/resolve`
+
+请求体：
 
 ```json
 {
   "symbol": "002594",
+  "market": "CN"
+}
+```
+
+### 获取价格数据
+
+`POST /stocks/data`
+
+请求体：
+
+```json
+{
+  "symbol": "002594",
+  "market": "CN",
+  "start_date": "2025-03-01",
+  "end_date": "2026-03-10"
+}
+```
+
+说明：
+
+- 后端优先从数据库读取缓存
+- 数据不足时自动补全并写回数据库
+
+### 获取新闻资讯
+
+`POST /stocks/news`
+
+请求体：
+
+```json
+{
+  "symbol": "002594",
+  "market": "CN",
   "stock_name": "比亚迪",
   "limit": 10
 }
 ```
 
-返回：
+## Forecast
+
+`POST /forecast`
+
+请求体：
 
 ```json
 {
   "records": [],
-  "is_fallback": false
+  "days": 7
 }
 ```
 
-## Auth And History
+## User History
 
-`POST /auth/register`
+以下接口均需要登录。
 
-`POST /auth/login`
+### 获取当前用户历史记录
 
-请求：
+`GET /users/me/history`
 
-```json
-{
-  "username": "demo",
-  "password": "demo123"
-}
+请求头：
+
+```text
+Authorization: Bearer <token>
 ```
 
-`GET /users/{username}/history`
-
-返回用户历史访问记录。
+### 记录访问历史
 
 `POST /users/history/log`
 
-请求：
+请求体：
 
 ```json
 {
-  "username": "demo",
   "stock_name": "比亚迪",
   "stock_code": "002594"
 }
 ```
 
+### 删除单条历史记录
+
 `DELETE /users/history/{item_id}`
 
-删除单条历史。
+### 清空当前用户历史记录
 
-`DELETE /users/{username}/history`
+`DELETE /users/me/history`
 
-清空当前用户全部历史。
+## Portfolio
 
-## Forecast
+以下接口均需要登录，并且只操作当前登录用户的数据。
 
-`POST /forecast`
+### 账户概览
 
-请求：
+`GET /portfolio/me/summary`
+
+### 当前持仓
+
+`GET /portfolio/me/positions`
+
+### 收益表现
+
+`GET /portfolio/me/performance`
+
+### 交易记录
+
+`GET /portfolio/me/transactions`
+
+### 新增交易
+
+`POST /portfolio/transactions`
+
+请求体：
 
 ```json
 {
-  "records": [
-    {
-      "日期": "2026-03-10 00:00:00",
-      "收盘": 123.45
-    }
-  ],
-  "days": 7
+  "symbol": "002594",
+  "trade_type": "buy",
+  "trade_date": "2026-04-13",
+  "price": 100,
+  "quantity": 10,
+  "fee": 0,
+  "note": "首次建仓"
 }
 ```
 
-返回 Prophet 预测结果。
+### 修改交易
+
+`PUT /portfolio/transactions/{transaction_id}`
+
+### 删除交易
+
+`DELETE /portfolio/transactions/{transaction_id}`
 
 ## AI
 
+### 流式聊天
+
 `POST /ai/chat/stream`
 
-通用聊天流式输出接口。
-
-请求：
-
-```json
-{
-  "messages": [
-    {
-      "role": "user",
-      "content": "请分析比亚迪"
-    }
-  ],
-  "temperature": 0.6
-}
-```
-
-返回：`text/plain` 流式文本。
+### 非流式聊天
 
 `POST /ai/chat/respond`
 
-非流式聊天接口。
+### 流式 Agent
 
 `POST /ai/agent/stream`
 
-通用 Agent 流式接口。
-
-请求：
-
-```json
-{
-  "messages": [
-    {
-      "role": "user",
-      "content": "帮我看看宁德时代"
-    }
-  ],
-  "context": {
-    "analysis_ready": true,
-    "current_stock_name": "宁德时代",
-    "current_stock_code": "300750",
-    "start_date": "2025-03-01",
-    "end_date": "2026-03-10",
-    "pdf_ready_for_current_stock": true
-  }
-}
-```
+### 非流式 Agent
 
 `POST /ai/agent/respond`
-
-返回 Agent 最终内容与动作信息。
 
 ## PDF
 
 `POST /reports/pdf`
 
-请求：
+请求体：
 
 ```json
 {
   "symbol": "002594",
+  "market": "CN",
   "stock_name": "比亚迪",
   "start_date": "2025-03-01",
   "end_date": "2026-03-10"
 }
 ```
 
-返回：`application/pdf`
+返回类型：
 
-行为说明：
+`application/pdf`
 
-- 同参数且当天已生成：直接返回缓存 PDF
-- 同参数跨天：覆盖同名文件并更新时间
-- 区间变化：生成新文件
-- 图表导出失败时仍会生成纯文字降级版 PDF
+说明：
+
+- 同一股票、同一区间的报告支持缓存复用
+- 报告生成失败时会返回错误信息

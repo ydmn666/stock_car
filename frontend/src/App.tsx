@@ -1,7 +1,9 @@
 ﻿import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  clearAuthSession,
   deleteHistoryItem,
   generatePdfReport,
+  getAuthSession,
   getForecast,
   getHealth,
   getPriceHistory,
@@ -11,6 +13,7 @@ import {
   login,
   register,
   resolveInstrument,
+  setAuthSession,
 } from "./lib/api";
 import { ForecastPage } from "./pages/dashboard/ForecastPage";
 import { HistoryPage } from "./pages/dashboard/HistoryPage";
@@ -41,12 +44,29 @@ import type { ForecastPoint, HistoryItem, Instrument, NewsItem, PriceBar } from 
 
 type Screen = "landing" | "auth" | "setup" | "workspace";
 type AuthMode = "login" | "register";
+const USERNAME_PATTERN = /^\S{4,20}$/;
+
+function validateUsernameInput(value: string) {
+  const normalized = value.trim();
+  if (!USERNAME_PATTERN.test(normalized)) {
+    return "用户名需为 4-20 位，且不能包含空格。";
+  }
+  return "";
+}
+
+function validatePasswordInput(value: string) {
+  if (value.length < 6 || value.length > 20) {
+    return "密码长度需为 6-20 位。";
+  }
+  return "";
+}
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [currentUser, setCurrentUser] = useState("");
   const [health, setHealth] = useState("checking");
@@ -75,12 +95,29 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const session = getAuthSession();
+    if (session) {
+      setCurrentUser(session.username);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!currentUser) {
       setHistoryItems([]);
+      if (screen === "setup" || screen === "workspace") {
+        setScreen("auth");
+      }
       return;
     }
-    void getUserHistory(currentUser).then(setHistoryItems).catch(() => setHistoryItems([]));
-  }, [currentUser]);
+    void getUserHistory()
+      .then(setHistoryItems)
+      .catch(() => {
+        clearAuthSession();
+        setCurrentUser("");
+        setHistoryItems([]);
+        setScreen("auth");
+      });
+  }, [currentUser, screen]);
 
   const filteredHotStocks = useMemo(() => {
     return HOT_STOCKS;
@@ -101,9 +138,11 @@ export default function App() {
   async function refreshHistory() {
     if (!currentUser) return;
     try {
-      setHistoryItems(await getUserHistory(currentUser));
+      setHistoryItems(await getUserHistory());
     } catch {
-      // noop
+      clearAuthSession();
+      setCurrentUser("");
+      setScreen("auth");
     }
   }
 
@@ -114,21 +153,42 @@ export default function App() {
       setAuthError("请输入用户名和密码。");
       return;
     }
+    const usernameError = validateUsernameInput(username);
+    if (usernameError) {
+      setAuthError(usernameError);
+      return;
+    }
+    const passwordError = validatePasswordInput(password);
+    if (passwordError) {
+      setAuthError(passwordError);
+      return;
+    }
     try {
       if (authMode === "register") {
+        if (password !== confirmPassword) {
+          setAuthError("两次输入的密码不一致。");
+          return;
+        }
         const created = await register(username.trim(), password);
         if (!created.success) {
           setAuthError(created.message || "注册失败，请稍后重试。");
           return;
         }
+        setAuthMode("login");
+        setPassword("");
+        setConfirmPassword("");
+        setAuthError("注册成功，请使用刚注册的账号登录。");
+        return;
       }
       const result = await login(username.trim(), password);
-      if (!result.success) {
+      if (!result.success || !result.token || !result.username) {
         setAuthError("用户名或密码错误。");
         return;
       }
-      setCurrentUser(username.trim());
+      setAuthSession({ token: result.token, username: result.username });
+      setCurrentUser(result.username);
       setPassword("");
+      setConfirmPassword("");
       setScreen("setup");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "认证过程出现异常。");
@@ -225,7 +285,7 @@ export default function App() {
         nextForecast[item.instrument.id] = item.forecast;
         nextNews[item.instrument.id] = item.news;
         nextFallback[item.instrument.id] = item.fallback;
-        if (currentUser) void logHistory(currentUser, item.instrument.display_name, item.instrument.symbol);
+        if (currentUser) void logHistory(item.instrument.display_name, item.instrument.symbol);
       }
 
       setSelectedStocks(nextSelectedStocks);
@@ -279,7 +339,11 @@ export default function App() {
   }
 
   function logout() {
+    clearAuthSession();
     setCurrentUser("");
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
     setScreen("landing");
     setActiveTab("overview");
   }
@@ -342,17 +406,27 @@ export default function App() {
         mode={authMode}
         username={username}
         password={password}
+        confirmPassword={confirmPassword}
         error={authError}
         onBack={() => setScreen("landing")}
-        onModeChange={setAuthMode}
+        onModeChange={(mode) => {
+          setAuthMode(mode);
+          setAuthError("");
+          setPassword("");
+          setConfirmPassword("");
+        }}
         onUsernameChange={setUsername}
         onPasswordChange={setPassword}
+        onConfirmPasswordChange={setConfirmPassword}
         onSubmit={submitAuth}
       />
     );
   }
 
   if (screen === "setup") {
+    if (!currentUser) {
+      return null;
+    }
     return (
       <StockSetupPage
         currentUser={currentUser}
@@ -378,6 +452,10 @@ export default function App() {
         hotStocks={filteredHotStocks}
       />
     );
+  }
+
+  if (!currentUser) {
+    return null;
   }
 
   return (
